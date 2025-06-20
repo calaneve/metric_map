@@ -98,13 +98,17 @@
         );
         const metricIndex = relatedMetrics.findIndex(r => r.metric === metric);
         const centerIndex = (relatedMetrics.length - 1) / 2;
-        const offset = (metricIndex - centerIndex) * 0.0003; // smaller offset
+        const offset = (metricIndex - centerIndex) * 0.0005;
 
-        // Tooltip text
+        // Tooltip text with selected metric highlighted in blue
         let tooltip = `<strong>${reachId}</strong><br><strong>${variable}</strong><br><ul style="padding-left: 16px;">`;
         relatedMetrics.forEach(m => {
           const g = m.metric_grade || "No Data";
-          tooltip += `<li>${m.metric}: <strong>${g}</strong></li>`;
+          if (m.metric === metric) {
+            tooltip += `<li><strong style='color:blue;'>${m.metric}: ${g}</strong></li>`;
+          } else {
+            tooltip += `<li>${m.metric}: <strong>${g}</strong></li>`;
+          }
         });
         tooltip += `</ul>`;
 
@@ -114,14 +118,14 @@
 
           const polyline = L.polyline(latlngs, {
             color: color,
-            weight: 4,
+            weight: 6,
             opacity: 0.7
           }).bindTooltip(tooltip, { sticky: true })
             .on("mouseover", function () {
-              this.setStyle({ weight: 6, opacity: 1 });
+              this.setStyle({ weight: 8, opacity: 1 });
             })
             .on("mouseout", function () {
-              this.setStyle({ weight: 4, opacity: 0.7 });
+              this.setStyle({ weight: 6, opacity: 0.7 });
             })
             .addTo(map);
 
