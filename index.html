@@ -54,17 +54,17 @@
         .then(res => res.text())
         .then(csv => Papa.parse(csv, { header: true }).data)
     ]).then(([geojson, metrics]) => {
-      // Show reach keys for sanity
+      // Map reach_id from geojson
       const reachMap = {};
       geojson.features.forEach(f => {
-        console.log("GeoJSON properties:", f.properties);
-const id = f.properties.Reach || f.properties.reach_id || f.properties.Reach_ID || f.properties.ID;
+        const id = f.properties.reach_id;
         reachMap[id] = f;
       });
+
       console.log("Loaded Reach IDs from GeoJSON:", Object.keys(reachMap).slice(0, 5));
       console.log("Sample CSV reach_id values:", metrics.slice(0, 5).map(r => r.reach_id));
 
-      // Draw one test line to verify the map works
+      // Draw one test line from first GeoJSON feature
       const testFeature = geojson.features[0];
       let segments = [];
 
@@ -86,7 +86,6 @@ const id = f.properties.Reach || f.properties.reach_id || f.properties.Reach_ID 
 
       console.log("✅ Test line added from first GeoJSON reach");
 
-      // Optional: add basic filter to confirm dropdown works (even if no lines shown)
       document.getElementById('variableFilter').addEventListener('change', function () {
         console.log("Dropdown changed to:", this.value);
       });
@@ -94,4 +93,3 @@ const id = f.properties.Reach || f.properties.reach_id || f.properties.Reach_ID 
   </script>
 </body>
 </html>
-
