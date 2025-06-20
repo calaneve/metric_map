@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Stream Metric Map – One Line per Metric</title>
+  <title>Stream Metric Map – Per Variable</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
@@ -23,7 +23,6 @@
   <div id="controls">
     <label for="variableFilter">Select Variable:</label>
     <select id="variableFilter">
-      <option value="All">All Variables</option>
       <option value="Flow Regime">Flow Regime</option>
       <option value="Water Quality">Water Quality</option>
       <option value="Temperature">Temperature</option>
@@ -46,13 +45,13 @@
     }).addTo(map);
 
     const gradeColors = {
-      "A": "#1a9641",
-      "B": "#a6d96a",
-      "C": "#ffffbf",
-      "D": "#fdae61",
-      "F": "#d7191c",
-      "—": "#999999",
-      "No Data": "#999999"
+      "A": "green",
+      "B": "lightgreen",
+      "C": "yellow",
+      "D": "orange",
+      "F": "red",
+      "No Data": "gray",
+      "": "gray"
     };
 
     let allLayers = [];
@@ -62,11 +61,9 @@
     }
 
     function drawMetricLines(metrics, geojson, selectedVariable) {
-      // Clear old layers
       allLayers.forEach(layer => map.removeLayer(layer));
       allLayers = [];
 
-      // Build reach lookup
       const reachMap = {};
       geojson.features.forEach(f => {
         reachMap[f.properties.reach_id] = f;
@@ -76,11 +73,11 @@
         const reachId = row.reach_id;
         const variable = row.variable;
 
-        if (selectedVariable !== "All" && variable !== selectedVariable) return;
+        if (variable !== selectedVariable) return;
 
         const metric = row.metric;
         const grade = row.metric_grade || "No Data";
-        const color = gradeColors[grade] || "#cccccc";
+        const color = gradeColors[grade] || "gray";
 
         const reachFeature = reachMap[reachId];
         if (!reachFeature) return;
@@ -90,14 +87,13 @@
           ? geometry.coordinates
           : [geometry.coordinates];
 
-        // Calculate offset using index of metric within this reach + variable
         const relatedMetrics = metrics.filter(r =>
           r.reach_id === reachId && r.variable === variable
         );
         const metricIndex = relatedMetrics.findIndex(r => r.metric === metric);
-        const offset = metricIndex * 0.002; // Stronger visual separation
+        const centerIndex = (relatedMetrics.length - 1) / 2;
+        const offset = (metricIndex - centerIndex) * 0.001;
 
-        // Build tooltip with all metrics for this reach + variable
         let tooltip = `<strong>${reachId}</strong><br><strong>${variable}</strong><br><ul style="padding-left: 16px;">`;
         relatedMetrics.forEach(m => {
           const g = m.metric_grade || "No Data";
@@ -105,16 +101,22 @@
         });
         tooltip += `</ul>`;
 
-        // Draw each offset segment
         segments.forEach(segment => {
           const offsetCoords = offsetLine(segment, offset);
           const latlngs = offsetCoords.map(([lng, lat]) => [lat, lng]);
 
           const polyline = L.polyline(latlngs, {
             color: color,
-            weight: 4,
-            opacity: 0.9
-          }).bindTooltip(tooltip, { sticky: true }).addTo(map);
+            weight: 2.5,
+            opacity: 0.7
+          }).bindTooltip(tooltip, { sticky: true })
+            .on("mouseover", function () {
+              this.setStyle({ weight: 5, opacity: 1 });
+            })
+            .on("mouseout", function () {
+              this.setStyle({ weight: 2.5, opacity: 0.7 });
+            })
+            .addTo(map);
 
           allLayers.push(polyline);
         });
@@ -129,12 +131,14 @@
         .then(res => res.text())
         .then(csv => Papa.parse(csv, { header: true }).data)
     ]).then(([geojson, metrics]) => {
-      drawMetricLines(metrics, geojson, "All");
+      const dropdown = document.getElementById('variableFilter');
+      drawMetricLines(metrics, geojson, dropdown.value);
 
-      document.getElementById('variableFilter').addEventListener('change', function () {
+      dropdown.addEventListener('change', function () {
         drawMetricLines(metrics, geojson, this.value);
       });
     });
   </script>
 </body>
 </html>
+
