@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Metric Map Debug</title>
+  <title>Metric-Level Stream Grades with Filter</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
@@ -44,8 +44,74 @@
       maxZoom: 18,
     }).addTo(map);
 
+    const gradeColors = {
+      "A": "#1a9641",
+      "B": "#a6d96a",
+      "C": "#ffffbf",
+      "D": "#fdae61",
+      "F": "#d7191c",
+      "—": "#999999",
+      "No Data": "#999999"
+    };
+
+    let allLayers = [];
+
     function offsetLine(coords, offset) {
       return coords.map(([lng, lat]) => [lng + offset, lat + offset]);
+    }
+
+    function drawLines(metrics, geojson, selectedVariable) {
+      // Clear previous
+      allLayers.forEach(layer => map.removeLayer(layer));
+      allLayers = [];
+
+      const reachMap = {};
+      geojson.features.forEach(f => {
+        const id = f.properties.reach_id;
+        reachMap[id] = f;
+      });
+
+      metrics.forEach(row => {
+        const reachId = row.reach_id;
+        const variable = row.variable;
+        if (selectedVariable !== "All" && variable !== selectedVariable) return;
+
+        const grade = row.metric_grade || "No Data";
+        const offset = parseFloat(row.line_offset || 0);
+        const color = gradeColors[grade] || "#cccccc";
+
+        const reachFeature = reachMap[reachId];
+        if (!reachFeature) return;
+
+        let segments = [];
+        const geometry = reachFeature.geometry;
+
+        if (geometry.type === "MultiLineString") {
+          segments = geometry.coordinates;
+        } else if (geometry.type === "LineString") {
+          segments = [geometry.coordinates];
+        } else {
+          console.warn("Unknown geometry type:", geometry.type);
+          return;
+        }
+
+        segments.forEach(segment => {
+          const offsetCoords = offsetLine(segment, offset * 5);
+          const latlngs = offsetCoords.map(([lng, lat]) => [lat, lng]);
+
+          const polyline = L.polyline(latlngs, {
+            color: color,
+            weight: 4,
+            opacity: 0.9
+          }).bindTooltip(
+            `<strong>${reachId}</strong><br>${variable} – ${row.metric}: <strong>${grade}</strong>`,
+            { sticky: true }
+          ).addTo(map);
+
+          polyline.options.variable = variable;
+          allLayers.push(polyline);
+        });
+      });
     }
 
     Promise.all([
@@ -54,42 +120,13 @@
         .then(res => res.text())
         .then(csv => Papa.parse(csv, { header: true }).data)
     ]).then(([geojson, metrics]) => {
-      // Map reach_id from geojson
-      const reachMap = {};
-      geojson.features.forEach(f => {
-        const id = f.properties.reach_id;
-        reachMap[id] = f;
-      });
-
-      console.log("Loaded Reach IDs from GeoJSON:", Object.keys(reachMap).slice(0, 5));
-      console.log("Sample CSV reach_id values:", metrics.slice(0, 5).map(r => r.reach_id));
-
-      // Draw one test line from first GeoJSON feature
-      const testFeature = geojson.features[0];
-      let segments = [];
-
-      if (testFeature.geometry.type === "MultiLineString") {
-        segments = testFeature.geometry.coordinates;
-      } else if (testFeature.geometry.type === "LineString") {
-        segments = [testFeature.geometry.coordinates];
-      } else {
-        console.warn("Unknown geometry type:", testFeature.geometry.type);
-      }
-
-      segments.forEach(segment => {
-        const latlngs = segment.map(([lng, lat]) => [lat, lng]);
-        L.polyline(latlngs, {
-          color: "#3388ff",
-          weight: 5
-        }).bindTooltip("Test reach line drawn").addTo(map);
-      });
-
-      console.log("✅ Test line added from first GeoJSON reach");
+      drawLines(metrics, geojson, "All");
 
       document.getElementById('variableFilter').addEventListener('change', function () {
-        console.log("Dropdown changed to:", this.value);
+        drawLines(metrics, geojson, this.value);
       });
     });
   </script>
 </body>
 </html>
+
