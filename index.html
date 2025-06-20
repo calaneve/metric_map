@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Metric Lines by Grade</title>
+  <title>Stream Metric Map – One Line per Metric</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
@@ -15,6 +15,7 @@
       background: white;
       padding: 10px;
       border: 1px solid #ccc;
+      font-family: sans-serif;
     }
   </style>
 </head>
@@ -41,7 +42,7 @@
     const map = L.map('map').setView([39.9, -105.9], 10);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
+      maxZoom: 18
     }).addTo(map);
 
     const gradeColors = {
@@ -61,20 +62,23 @@
     }
 
     function drawMetricLines(metrics, geojson, selectedVariable) {
+      // Clear old layers
       allLayers.forEach(layer => map.removeLayer(layer));
       allLayers = [];
 
+      // Build reach lookup
       const reachMap = {};
       geojson.features.forEach(f => {
-        const id = f.properties.reach_id;
-        reachMap[id] = f;
+        reachMap[f.properties.reach_id] = f;
       });
 
       metrics.forEach(row => {
         const reachId = row.reach_id;
         const variable = row.variable;
+
         if (selectedVariable !== "All" && variable !== selectedVariable) return;
 
+        const metric = row.metric;
         const grade = row.metric_grade || "No Data";
         const offset = parseFloat(row.line_offset || 0);
         const color = gradeColors[grade] || "#cccccc";
@@ -87,23 +91,33 @@
           ? geometry.coordinates
           : [geometry.coordinates];
 
+        // Build tooltip listing all metrics for this reach + variable
+        const relatedMetrics = metrics.filter(r =>
+          r.reach_id === reachId && r.variable === variable
+        );
+
+        let tooltip = `<strong>${reachId}</strong><br><strong>${variable}</strong><br><ul style="padding-left: 16px;">`;
+        relatedMetrics.forEach(m => {
+          const g = m.metric_grade || "No Data";
+          tooltip += `<li>${m.metric}: <strong>${g}</strong></li>`;
+        });
+        tooltip += `</ul>`;
+
         segments.forEach(segment => {
-          const offsetCoords = offsetLine(segment, offset * 5); // apply stronger offset
+          const offsetCoords = offsetLine(segment, offset * 5); // separate lines visually
           const latlngs = offsetCoords.map(([lng, lat]) => [lat, lng]);
 
           const polyline = L.polyline(latlngs, {
             color: color,
             weight: 4,
             opacity: 0.9
-          }).bindTooltip(
-            `<strong>${reachId}</strong><br>${variable} – ${row.metric}: <strong>${grade}</strong>`,
-            { sticky: true }
-          ).addTo(map);
+          }).bindTooltip(tooltip, { sticky: true }).addTo(map);
 
-          polyline.options.variable = variable;
           allLayers.push(polyline);
         });
       });
+
+      console.log(`✅ Drew ${allLayers.length} metric lines`);
     }
 
     Promise.all([
@@ -121,3 +135,4 @@
   </script>
 </body>
 </html>
+
