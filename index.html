@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Clean Stream Metric Map</title>
+  <title>Curved Arcs Metric Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
@@ -36,7 +36,6 @@
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <script src="https://unpkg.com/leaflet-polylinedecorator@1.7.0/dist/leaflet.polylineDecorator.min.js"></script>
 
   <script>
     const map = L.map('map').setView([39.9, -105.9], 10);
@@ -57,6 +56,14 @@
 
     let allLayers = [];
 
+    function arcOffsetLine(coords, amplitude) {
+      const n = coords.length;
+      return coords.map(([lat, lng], i) => {
+        const t = Math.PI * i / (n - 1);
+        return [lat + amplitude * Math.sin(t), lng];
+      });
+    }
+
     function drawMetricLines(metrics, geojson, selectedVariable) {
       allLayers.forEach(layer => map.removeLayer(layer));
       allLayers = [];
@@ -74,7 +81,7 @@
         grouped[key].push(row);
       });
 
-      Object.entries(grouped).forEach(([key, rows], index) => {
+      Object.entries(grouped).forEach(([key, rows]) => {
         const [reachId, metric] = key.split("__");
         const row = rows[0];
         const grade = row.metric_grade || "No Data";
@@ -93,7 +100,7 @@
           r.reach_id === reachId && r.variable === variable
         );
         const metricIndex = relatedMetrics.findIndex(r => r.metric === metric);
-        const offset = `${10 * (metricIndex + 1)}%`;
+        const amplitude = 0.0003 * (metricIndex - (relatedMetrics.length - 1) / 2);
 
         let tooltip = `<strong>${reachId}</strong><br><strong>${variable}</strong><br><ul style="padding-left: 16px;">`;
         relatedMetrics.forEach(m => {
@@ -108,24 +115,18 @@
 
         segments.forEach(segment => {
           const latlngs = segment.map(([lng, lat]) => [lat, lng]);
+          const arcLatLngs = arcOffsetLine(latlngs, amplitude);
+          const polyline = L.polyline(arcLatLngs, {
+            color: color,
+            weight: 6,
+            opacity: 0.85
+          }).bindTooltip(tooltip, { sticky: true }).addTo(map);
 
-          const basePolyline = L.polyline(latlngs, { color: 'transparent' }).addTo(map);
-          const pattern = L.polylineDecorator(basePolyline, {
-            patterns: [
-              {
-                offset: offset,
-                repeat: 0,
-                symbol: L.Symbol.dash({ pixelSize: 6, pathOptions: { color: color, weight: 6, opacity: 0.7 } })
-              }
-            ]
-          }).bindTooltip(tooltip, { sticky: true })
-            .addTo(map);
-
-          allLayers.push(basePolyline, pattern);
+          allLayers.push(polyline);
         });
       });
 
-      console.log(`✅ Drew ${allLayers.length} decorated metric lines`);
+      console.log(`✅ Drew ${allLayers.length} arc-rendered metric lines`);
     }
 
     Promise.all([
