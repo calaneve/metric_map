@@ -57,7 +57,8 @@
       // Show reach keys for sanity
       const reachMap = {};
       geojson.features.forEach(f => {
-        const id = f.properties.Reach;
+        console.log("GeoJSON properties:", f.properties);
+const id = f.properties.Reach || f.properties.reach_id || f.properties.Reach_ID || f.properties.ID;
         reachMap[id] = f;
       });
       console.log("Loaded Reach IDs from GeoJSON:", Object.keys(reachMap).slice(0, 5));
