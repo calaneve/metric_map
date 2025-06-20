@@ -36,6 +36,7 @@
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://unpkg.com/leaflet-polylinedecorator@1.7.0/dist/leaflet.polylineDecorator.min.js"></script>
 
   <script>
     const map = L.map('map').setView([39.9, -105.9], 10);
@@ -56,10 +57,6 @@
 
     let allLayers = [];
 
-    function offsetLine(coords, offset) {
-      return coords.map(([lng, lat]) => [lng + offset, lat + offset]);
-    }
-
     function drawMetricLines(metrics, geojson, selectedVariable) {
       allLayers.forEach(layer => map.removeLayer(layer));
       allLayers = [];
@@ -69,7 +66,6 @@
         reachMap[f.properties.reach_id] = f;
       });
 
-      // Filter metrics by variable and group by reach + metric
       const grouped = {};
       metrics.forEach(row => {
         if (row.variable !== selectedVariable) return;
@@ -97,10 +93,8 @@
           r.reach_id === reachId && r.variable === variable
         );
         const metricIndex = relatedMetrics.findIndex(r => r.metric === metric);
-        const centerIndex = (relatedMetrics.length - 1) / 2;
-        const offset = (metricIndex - centerIndex) * 0.0007;
+        const offset = `${10 * (metricIndex + 1)}%`;
 
-        // Tooltip text with selected metric highlighted in blue
         let tooltip = `<strong>${reachId}</strong><br><strong>${variable}</strong><br><ul style="padding-left: 16px;">`;
         relatedMetrics.forEach(m => {
           const g = m.metric_grade || "No Data";
@@ -113,27 +107,25 @@
         tooltip += `</ul>`;
 
         segments.forEach(segment => {
-          const offsetCoords = offsetLine(segment, offset);
-          const latlngs = offsetCoords.map(([lng, lat]) => [lat, lng]);
+          const latlngs = segment.map(([lng, lat]) => [lat, lng]);
 
-          const polyline = L.polyline(latlngs, {
-            color: color,
-            weight: 5,
-            opacity: 0.7
+          const basePolyline = L.polyline(latlngs, { color: 'transparent' }).addTo(map);
+          const pattern = L.polylineDecorator(basePolyline, {
+            patterns: [
+              {
+                offset: offset,
+                repeat: 0,
+                symbol: L.Symbol.dash({ pixelSize: 6, pathOptions: { color: color, weight: 6, opacity: 0.7 } })
+              }
+            ]
           }).bindTooltip(tooltip, { sticky: true })
-            .on("mouseover", function () {
-              this.setStyle({ weight: 8, opacity: 1 });
-            })
-            .on("mouseout", function () {
-              this.setStyle({ weight: 6, opacity: 0.7 });
-            })
             .addTo(map);
 
-          allLayers.push(polyline);
+          allLayers.push(basePolyline, pattern);
         });
       });
 
-      console.log(`✅ Drew ${allLayers.length} cleaned metric lines`);
+      console.log(`✅ Drew ${allLayers.length} decorated metric lines`);
     }
 
     Promise.all([
@@ -152,4 +144,5 @@
   </script>
 </body>
 </html>
+
 
