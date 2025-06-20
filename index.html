@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -25,6 +24,7 @@
     <label for="variableFilter">Select Variable:</label>
     <select id="variableFilter">
       <option value="All">All Variables</option>
+       <option value="Flow Regime">Flow Regime</option>
       <option value="Water Quality">Water Quality</option>
       <option value="Temperature">Temperature</option>
       <option value="Sediment">Sediment</option>
@@ -62,7 +62,6 @@
     }
 
     function drawLines(metrics, geojson, selectedVariable) {
-      // Clear previous layers
       allLayers.forEach(layer => map.removeLayer(layer));
       allLayers = [];
 
@@ -83,21 +82,27 @@
 
         const reachFeature = reachMap[reachId];
         if (reachFeature) {
-          const coords = reachFeature.geometry.coordinates;
-          const offsetCoords = offsetLine(coords, offset * 5); // amplify offset for visibility
-          const latlngs = offsetCoords.map(([lng, lat]) => [lat, lng]);
+          const geometry = reachFeature.geometry;
+          const coordsArray = geometry.type === "MultiLineString"
+            ? geometry.coordinates
+            : [geometry.coordinates];
 
-          const polyline = L.polyline(latlngs, {
-            color: color,
-            weight: 4,
-            opacity: 0.9
-          }).bindTooltip(
-            `<strong>${reachId}</strong><br>${variable} – ${row.metric}: <strong>${grade}</strong>`,
-            { sticky: true }
-          ).addTo(map);
+          coordsArray.forEach(coords => {
+            const offsetCoords = offsetLine(coords, offset * 5);
+            const latlngs = offsetCoords.map(([lng, lat]) => [lat, lng]);
 
-          polyline.options.variable = variable;
-          allLayers.push(polyline);
+            const polyline = L.polyline(latlngs, {
+              color: color,
+              weight: 4,
+              opacity: 0.9
+            }).bindTooltip(
+              `<strong>${reachId}</strong><br>${variable} – ${row.metric}: <strong>${grade}</strong>`,
+              { sticky: true }
+            ).addTo(map);
+
+            polyline.options.variable = variable;
+            allLayers.push(polyline);
+          });
         }
       });
     }
@@ -118,5 +123,3 @@
 </body>
 </html>
 
-</body>
-</html>
