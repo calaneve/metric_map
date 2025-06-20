@@ -80,7 +80,6 @@
 
         const metric = row.metric;
         const grade = row.metric_grade || "No Data";
-        const offset = parseFloat(row.line_offset || 0);
         const color = gradeColors[grade] || "#cccccc";
 
         const reachFeature = reachMap[reachId];
@@ -91,11 +90,14 @@
           ? geometry.coordinates
           : [geometry.coordinates];
 
-        // Build tooltip listing all metrics for this reach + variable
+        // Calculate offset using index of metric within this reach + variable
         const relatedMetrics = metrics.filter(r =>
           r.reach_id === reachId && r.variable === variable
         );
+        const metricIndex = relatedMetrics.findIndex(r => r.metric === metric);
+        const offset = metricIndex * 0.002; // Stronger visual separation
 
+        // Build tooltip with all metrics for this reach + variable
         let tooltip = `<strong>${reachId}</strong><br><strong>${variable}</strong><br><ul style="padding-left: 16px;">`;
         relatedMetrics.forEach(m => {
           const g = m.metric_grade || "No Data";
@@ -103,8 +105,9 @@
         });
         tooltip += `</ul>`;
 
+        // Draw each offset segment
         segments.forEach(segment => {
-          const offsetCoords = offsetLine(segment, offset * 5); // separate lines visually
+          const offsetCoords = offsetLine(segment, offset);
           const latlngs = offsetCoords.map(([lng, lat]) => [lat, lng]);
 
           const polyline = L.polyline(latlngs, {
@@ -135,4 +138,3 @@
   </script>
 </body>
 </html>
-
