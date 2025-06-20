@@ -57,7 +57,7 @@
     let allLayers = [];
 
     function offsetLine(coords, offset) {
-      return coords.map(([lng, lat]) => [lng + offset, lat + offset]);
+      return coords.map(([lng, lat]) => [lng, lat + offset]);
     }
 
     function drawMetricLines(metrics, geojson, selectedVariable) {
