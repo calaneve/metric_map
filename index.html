@@ -24,7 +24,7 @@
     <label for="variableFilter">Select Variable:</label>
     <select id="variableFilter">
       <option value="All">All Variables</option>
-       <option value="Flow Regime">Flow Regime</option>
+      <option value="Flow Regime">Flow Regime</option>
       <option value="Water Quality">Water Quality</option>
       <option value="Temperature">Temperature</option>
       <option value="Sediment">Sediment</option>
@@ -81,29 +81,36 @@
         const color = gradeColors[grade] || "#cccccc";
 
         const reachFeature = reachMap[reachId];
-        if (reachFeature) {
-          const geometry = reachFeature.geometry;
-          const coordsArray = geometry.type === "MultiLineString"
-            ? geometry.coordinates
-            : [geometry.coordinates];
+        if (!reachFeature) return;
 
-          coordsArray.forEach(coords => {
-            const offsetCoords = offsetLine(coords, offset * 5);
-            const latlngs = offsetCoords.map(([lng, lat]) => [lat, lng]);
+        const geometry = reachFeature.geometry;
 
-            const polyline = L.polyline(latlngs, {
-              color: color,
-              weight: 4,
-              opacity: 0.9
-            }).bindTooltip(
-              `<strong>${reachId}</strong><br>${variable} – ${row.metric}: <strong>${grade}</strong>`,
-              { sticky: true }
-            ).addTo(map);
-
-            polyline.options.variable = variable;
-            allLayers.push(polyline);
-          });
+        let segments = [];
+        if (geometry.type === "MultiLineString") {
+          segments = geometry.coordinates;
+        } else if (geometry.type === "LineString") {
+          segments = [geometry.coordinates];
+        } else {
+          console.warn("Unsupported geometry type:", geometry.type);
+          return;
         }
+
+        segments.forEach(segment => {
+          const offsetCoords = offsetLine(segment, offset * 5);
+          const latlngs = offsetCoords.map(([lng, lat]) => [lat, lng]);
+
+          const polyline = L.polyline(latlngs, {
+            color: color,
+            weight: 4,
+            opacity: 0.9
+          }).bindTooltip(
+            `<strong>${reachId}</strong><br>${variable} – ${row.metric}: <strong>${grade}</strong>`,
+            { sticky: true }
+          ).addTo(map);
+
+          polyline.options.variable = variable;
+          allLayers.push(polyline);
+        });
       });
     }
 
@@ -122,4 +129,3 @@
   </script>
 </body>
 </html>
-
