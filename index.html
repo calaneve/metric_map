@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Curved Arcs Metric Map</title>
+  <title>Clean Stream Metric Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
@@ -56,12 +56,8 @@
 
     let allLayers = [];
 
-    function arcOffsetLine(coords, amplitude) {
-      const n = coords.length;
-      return coords.map(([lat, lng], i) => {
-        const t = Math.PI * i / (n - 1);
-        return [lat + amplitude * Math.sin(t), lng];
-      });
+    function offsetLine(coords, offset) {
+      return coords.map(([lng, lat]) => [lng + offset, lat + offset]);
     }
 
     function drawMetricLines(metrics, geojson, selectedVariable) {
@@ -73,6 +69,7 @@
         reachMap[f.properties.reach_id] = f;
       });
 
+      // Filter metrics by variable and group by reach + metric
       const grouped = {};
       metrics.forEach(row => {
         if (row.variable !== selectedVariable) return;
@@ -81,7 +78,7 @@
         grouped[key].push(row);
       });
 
-      Object.entries(grouped).forEach(([key, rows]) => {
+      Object.entries(grouped).forEach(([key, rows], index) => {
         const [reachId, metric] = key.split("__");
         const row = rows[0];
         const grade = row.metric_grade || "No Data";
@@ -100,8 +97,10 @@
           r.reach_id === reachId && r.variable === variable
         );
         const metricIndex = relatedMetrics.findIndex(r => r.metric === metric);
-        const amplitude = 0.0003 * (metricIndex - (relatedMetrics.length - 1) / 2);
+        const centerIndex = (relatedMetrics.length - 1) / 2;
+        const offset = (metricIndex - centerIndex) * 0.001;
 
+        // Tooltip text with selected metric highlighted in blue
         let tooltip = `<strong>${reachId}</strong><br><strong>${variable}</strong><br><ul style="padding-left: 16px;">`;
         relatedMetrics.forEach(m => {
           const g = m.metric_grade || "No Data";
@@ -114,19 +113,27 @@
         tooltip += `</ul>`;
 
         segments.forEach(segment => {
-          const latlngs = segment.map(([lng, lat]) => [lat, lng]);
-          const arcLatLngs = arcOffsetLine(latlngs, amplitude);
-          const polyline = L.polyline(arcLatLngs, {
+          const offsetCoords = offsetLine(segment, offset);
+          const latlngs = offsetCoords.map(([lng, lat]) => [lat, lng]);
+
+          const polyline = L.polyline(latlngs, {
             color: color,
-            weight: 6,
-            opacity: 0.85
-          }).bindTooltip(tooltip, { sticky: true }).addTo(map);
+            weight: 4,
+            opacity: 0.7
+          }).bindTooltip(tooltip, { sticky: true })
+            .on("mouseover", function () {
+              this.setStyle({ weight: 8, opacity: 1 });
+            })
+            .on("mouseout", function () {
+              this.setStyle({ weight: 6, opacity: 0.7 });
+            })
+            .addTo(map);
 
           allLayers.push(polyline);
         });
       });
 
-      console.log(`✅ Drew ${allLayers.length} arc-rendered metric lines`);
+      console.log(`✅ Drew ${allLayers.length} cleaned metric lines`);
     }
 
     Promise.all([
@@ -145,5 +152,6 @@
   </script>
 </body>
 </html>
+
 
 
