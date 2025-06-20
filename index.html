@@ -3,27 +3,48 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Metric-Level Stream Grades</title>
+  <title>Metric-Level Stream Grades with Filter</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
     #map { height: 100vh; }
+    #controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 10px;
+      border: 1px solid #ccc;
+      font-family: sans-serif;
+    }
   </style>
 </head>
 <body>
+  <div id="controls">
+    <label for="variableFilter">Select Variable:</label>
+    <select id="variableFilter">
+      <option value="All">All Variables</option>
+      <option value="Water Quality">Water Quality</option>
+      <option value="Temperature">Temperature</option>
+      <option value="Sediment">Sediment</option>
+      <option value="Riparian">Riparian</option>
+      <option value="Geomorphology">Geomorphology</option>
+      <option value="Aquatic Ecosystems">Aquatic Ecosystems</option>
+    </select>
+  </div>
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
   <script>
-    const map = L.map('map').setView([39.9, -105.9], 10); // Adjust center/zoom as needed
+    const map = L.map('map').setView([39.9, -105.9], 10);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
     }).addTo(map);
 
-    // Color scale matching A–F grading
     const gradeColors = {
       "A": "#1a9641",
       "B": "#a6d96a",
@@ -34,27 +55,28 @@
       "No Data": "#999999"
     };
 
-    // Fetch GeoJSON and CSV in parallel
-    Promise.all([
-      fetch('https://calaneve.github.io/streammap/LBD_ReachCharacterization_GCSWGS84.geojson').then(res => res.json()),
-      fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vROJntSYDQdg2vU1VTlMy8E-qOsSe9wr5_JMj1n1ks2wonNsk-JippjXmzizJJ9_BfgwMzzBV0Af50h/pub?gid=820977230&single=true&output=csv')
-        .then(res => res.text())
-        .then(csv => Papa.parse(csv, { header: true }).data)
-    ]).then(([geojson, metrics]) => {
+    let allLayers = [];
+
+    function offsetLine(coords, offset) {
+      return coords.map(([lng, lat]) => [lng + offset, lat + offset]);
+    }
+
+    function drawLines(metrics, geojson, selectedVariable) {
+      // Clear previous layers
+      allLayers.forEach(layer => map.removeLayer(layer));
+      allLayers = [];
+
       const reachMap = {};
       geojson.features.forEach(f => {
         const id = f.properties.Reach;
         reachMap[id] = f;
       });
 
-      // Function to offset line geometry by small amount
-      function offsetLine(coords, offset) {
-        return coords.map(pair => [pair[1] + offset, pair[0]]); // [lng + offset, lat]
-      }
-
-      // Group metrics by reach
       metrics.forEach(row => {
         const reachId = row.reach_id;
+        const variable = row.variable;
+        if (selectedVariable !== "All" && variable !== selectedVariable) return;
+
         const grade = row.metric_grade || "No Data";
         const offset = parseFloat(row.line_offset || 0);
         const color = gradeColors[grade] || "#cccccc";
@@ -62,20 +84,39 @@
         const reachFeature = reachMap[reachId];
         if (reachFeature) {
           const coords = reachFeature.geometry.coordinates;
-          const offsetCoords = offsetLine(coords, offset);
-          const latlngs = offsetCoords.map(([lng, lat]) => [lat, lng]); // convert to Leaflet format
+          const offsetCoords = offsetLine(coords, offset * 5); // amplify offset for visibility
+          const latlngs = offsetCoords.map(([lng, lat]) => [lat, lng]);
 
-          L.polyline(latlngs, {
+          const polyline = L.polyline(latlngs, {
             color: color,
             weight: 4,
             opacity: 0.9
           }).bindTooltip(
-            `<strong>${reachId}</strong><br>${row.variable} – ${row.metric}: <strong>${grade}</strong>`,
+            `<strong>${reachId}</strong><br>${variable} – ${row.metric}: <strong>${grade}</strong>`,
             { sticky: true }
           ).addTo(map);
+
+          polyline.options.variable = variable;
+          allLayers.push(polyline);
         }
+      });
+    }
+
+    Promise.all([
+      fetch('https://calaneve.github.io/streammap/LBD_ReachCharacterization_GCSWGS84.geojson').then(res => res.json()),
+      fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vROJntSYDQdg2vU1VTlMy8E-qOsSe9wr5_JMj1n1ks2wonNsk-JippjXmzizJJ9_BfgwMzzBV0Af50h/pub?gid=820977230&single=true&output=csv')
+        .then(res => res.text())
+        .then(csv => Papa.parse(csv, { header: true }).data)
+    ]).then(([geojson, metrics]) => {
+      drawLines(metrics, geojson, "All");
+
+      document.getElementById('variableFilter').addEventListener('change', function () {
+        drawLines(metrics, geojson, this.value);
       });
     });
   </script>
+</body>
+</html>
+
 </body>
 </html>
