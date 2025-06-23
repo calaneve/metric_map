@@ -1,27 +1,73 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <title>Clean Stream Metric Map</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8">
+  <title>Stream Map with Metric Toggle</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
     #map { height: 100vh; }
-    #controls {
+    #controls, #legend, .search-box, #subwatershedToggle, #subLegend {
       position: absolute;
-      top: 10px;
-      right: 10px;
       z-index: 1000;
       background: white;
-      padding: 10px;
+      padding: 8px;
       border: 1px solid #ccc;
       font-family: sans-serif;
+    }
+    #controls { top: 120px; right: 10px; width: 240px; }
+    #legend { bottom: 10px; left: 10px; }
+    #subwatershedToggle { bottom: 180px; left: 10px; }
+    #subLegend { bottom: 220px; left: 10px; display: none; }
+    .search-box { top: 60px; right: 10px; }
+    #updateButton {
+      width: 100%;
+      background: #007bff;
+      color: white;
+      padding: 6px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    #updateButton:hover { background: #0056b3; }
+    #loading {
+      display: none;
+      position: absolute;
+      top: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1001;
+      background: white;
+      padding: 8px;
+      border: 1px solid #ccc;
+    }
+    #viewToggle {
+      margin-bottom: 8px;
+      width: 100%;
+    }
+    select:disabled {
+      background-color: #eee;
     }
   </style>
 </head>
 <body>
+  <div class="search-box">
+    <input id="reachSearch" type="text" placeholder="Search Reach ID" style="width:160px; padding:4px;">
+  </div>
+
   <div id="controls">
-    <label for="variableFilter">Select Variable:</label>
+    <label for="viewToggle"><strong>View Mode:</strong></label>
+    <select id="viewToggle">
+      <option value="summary">Summary View</option>
+      <option value="metric">Metric View</option>
+    </select>
+
+    <label for="parameterSelect"><strong>Summary Parameter:</strong></label>
+    <select id="parameterSelect"></select>
+
+    <label for="variableFilter"><strong>Metric Variable:</strong></label>
     <select id="variableFilter">
       <option value="Flow Regime">Flow Regime</option>
       <option value="Water Quality">Water Quality</option>
@@ -30,135 +76,243 @@
       <option value="Riparian">Riparian</option>
       <option value="Geomorphology">Geomorphology</option>
       <option value="Aquatic Ecosystem">Aquatic Ecosystem</option>
-    </select>
+    </select><br><br>
+
+    <strong>Show Grades:</strong><br>
+    <label><input type="checkbox" class="gradeFilter" value="A" checked> A</label>
+    <label><input type="checkbox" class="gradeFilter" value="B" checked> B</label>
+    <label><input type="checkbox" class="gradeFilter" value="C" checked> C</label>
+    <label><input type="checkbox" class="gradeFilter" value="D" checked> D</label>
+    <label><input type="checkbox" class="gradeFilter" value="F" checked> F</label>
+    <label><input type="checkbox" class="gradeFilter" value="No Data" checked> No Data</label>
+    <button id="updateButton">Update Data</button>
   </div>
+
+  <div id="loading">Updating...</div>
+  <div id="subwatershedToggle">
+    <label><input type="checkbox" id="toggleSubwatersheds"> Subwatersheds</label>
+  </div>
+
+  <div id="subLegend">
+    <strong>Subwatershed Groups</strong><br>
+    <div><span style="display:inline-block;width:16px;height:16px;background:#08dd6d;"></span> Colorado River Headwaters</div>
+    <div><span style="display:inline-block;width:16px;height:16px;background:#ac49f9;"></span> Colorado River Lower</div>
+    <div><span style="display:inline-block;width:16px;height:16px;background:#3e77b2;"></span> Colorado River Mid</div>
+    <div><span style="display:inline-block;width:16px;height:16px;background:#f7a318;"></span> Colorado River Upper</div>
+    <div><span style="display:inline-block;width:16px;height:16px;background:#05a16f;"></span> Fraser River Lower</div>
+    <div><span style="display:inline-block;width:16px;height:16px;background:#b6e04c;"></span> Fraser River Mid</div>
+    <div><span style="display:inline-block;width:16px;height:16px;background:#e7402c;"></span> Fraser River Upper</div>
+  </div>
+
+  <div id="legend">
+    <strong>Grade Legend</strong><br>
+    <div><span style="display:inline-block;width:16px;height:16px;background:green;"></span> A</div>
+    <div><span style="display:inline-block;width:16px;height:16px;background:lightgreen;"></span> B</div>
+    <div><span style="display:inline-block;width:16px;height:16px;background:yellow;"></span> C</div>
+    <div><span style="display:inline-block;width:16px;height:16px;background:orange;"></span> D</div>
+    <div><span style="display:inline-block;width:16px;height:16px;background:red;"></span> F</div>
+    <div><span style="display:inline-block;width:16px;height:16px;background:gray;"></span> No Data</div>
+  </div>
+
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-
   <script>
-    const map = L.map('map').setView([39.9, -105.9], 10);
+    // ✅ JavaScript logic for full functionality will go here
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18
-    }).addTo(map);
+const map = L.map('map').setView([39.9, -105.9], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 18
+}).addTo(map);
 
-    const gradeColors = {
-      "A": "green",
-      "B": "lightgreen",
-      "C": "yellow",
-      "D": "orange",
-      "F": "red",
-      "No Data": "gray",
-      "": "gray"
-    };
+const geojsonUrl = 'https://calaneve.github.io/streammap/LBD_ReachCharacterization_GCSWGS84.geojson';
+const summaryCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vROJntSYDQdg2vU1VTlMy8E-qOsSe9wr5_JMj1n1ks2wonNsk-JippjXmzizJJ9_BfgwMzzBV0Af50h/pub?gid=61075690&single=true&output=csv';
+const metricCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vROJntSYDQdg2vU1VTlMy8E-qOsSe9wr5_JMj1n1ks2wonNsk-JippjXmzizJJ9_BfgwMzzBV0Af50h/pub?gid=820977230&single=true&output=csv';
 
-    let allLayers = [];
-   const metricLineGroups = {}; // key = reachId__metric → [polyline, polyline, ...]
+let geojsonData, summaryData, metricData;
+let summaryLayer, metricLayers = [], metricLineGroups = {};
+let currentView = 'summary';
 
-    function offsetLine(coords, offset) {
-      return coords.map(([lng, lat]) => [lng, lat + offset]);
+const parameterSelect = document.getElementById('parameterSelect');
+const variableFilter = document.getElementById('variableFilter');
+const viewToggle = document.getElementById('viewToggle');
+const updateButton = document.getElementById('updateButton');
+
+const gradeColors = {
+  "A": "green", "B": "lightgreen", "C": "yellow",
+  "D": "orange", "F": "red", "No Data": "gray", "": "gray"
+};
+
+function getActiveGradeFilters() {
+  return Array.from(document.querySelectorAll('.gradeFilter:checked')).map(cb => cb.value);
+}
+
+function updateDropdownStates() {
+  const isSummary = currentView === 'summary';
+  parameterSelect.disabled = !isSummary;
+  variableFilter.disabled = isSummary;
+}
+
+function offsetLine(coords, offset) {
+  return coords.map(([lng, lat]) => [lng, lat + offset]);
+}
+
+function clearMapLayers() {
+  if (summaryLayer) map.removeLayer(summaryLayer);
+  metricLayers.forEach(layer => map.removeLayer(layer));
+  metricLayers = [];
+  metricLineGroups = {};
+}
+
+function drawSummaryMap() {
+  const param = parameterSelect.value;
+  const grades = getActiveGradeFilters();
+
+  summaryLayer = L.geoJSON(geojsonData, {
+    filter: f => grades.includes((summaryData[f.properties.reach_id]?.[param] || 'No Data').trim()),
+    style: f => ({ color: gradeColors[(summaryData[f.properties.reach_id]?.[param] || 'No Data').trim()], weight: 6 }),
+    onEachFeature: (feature, layer) => {
+      const rec = summaryData[feature.properties.reach_id];
+      if (!rec) return;
+      let content = `<strong>Reach ID: ${feature.properties.reach_id}</strong><br><table>`;
+      for (const key in rec) {
+        const val = rec[key] || 'No Data';
+        const highlight = key === param;
+        content += `<tr><td>${highlight ? `<strong style='color:blue;'>${key}</strong>` : key}</td><td>=</td><td>${highlight ? `<strong style='color:blue;'>${val}</strong>` : val}</td></tr>`;
+      }
+      content += '</table>';
+      layer.bindTooltip(content, { sticky: true });
     }
+  }).addTo(map);
+}
 
-    function drawMetricLines(metrics, geojson, selectedVariable) {
-     allLayers.forEach(layer => map.removeLayer(layer));
-allLayers = [];
-for (const key in metricLineGroups) delete metricLineGroups[key];  // ✅ Clears correct cache
+function drawMetricMap() {
+  const selectedVariable = variableFilter.value;
+  const grades = getActiveGradeFilters();
 
+  const reachMap = {};
+  geojsonData.features.forEach(f => reachMap[f.properties.reach_id] = f);
 
-      const reachMap = {};
-      geojson.features.forEach(f => {
-        reachMap[f.properties.reach_id] = f;
-      });
+  const grouped = {};
+  metricData.forEach(row => {
+    if (row.variable !== selectedVariable) return;
+    const key = `${row.reach_id}__${row.metric}`;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(row);
+  });
 
-      // Filter metrics by variable and group by reach + metric
-      const grouped = {};
-      metrics.forEach(row => {
-        if (row.variable !== selectedVariable) return;
-        const key = `${row.reach_id}__${row.metric}`;
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(row);
-      });
+  Object.entries(grouped).forEach(([key, rows]) => {
+    const [reachId, metric] = key.split("__");
+    const row = rows[0];
+    const grade = row.metric_grade || "No Data";
+    if (!grades.includes(grade)) return;
 
-      Object.entries(grouped).forEach(([key, rows], index) => {
-        const [reachId, metric] = key.split("__");
-        const row = rows[0];
-        const grade = row.metric_grade || "No Data";
-        const color = gradeColors[grade] || "gray";
-        const variable = row.variable;
+    const reachFeature = reachMap[reachId];
+    if (!reachFeature) return;
+    const geometry = reachFeature.geometry;
+    const segments = geometry.type === "MultiLineString" ? geometry.coordinates : [geometry.coordinates];
 
-        const reachFeature = reachMap[reachId];
-        if (!reachFeature) return;
+    const relatedMetrics = metricData.filter(r => r.reach_id === reachId && r.variable === row.variable);
+    const metricIndex = relatedMetrics.findIndex(r => r.metric === metric);
+    const centerIndex = (relatedMetrics.length - 1) / 2;
+    const offset = (metricIndex - centerIndex) * 0.0015;
 
-        const geometry = reachFeature.geometry;
-        const segments = geometry.type === "MultiLineString"
-          ? geometry.coordinates
-          : [geometry.coordinates];
-
-        const relatedMetrics = metrics.filter(r =>
-          r.reach_id === reachId && r.variable === variable
-        );
-        const metricIndex = relatedMetrics.findIndex(r => r.metric === metric);
-        const centerIndex = (relatedMetrics.length - 1) / 2;
-        const offset = (metricIndex - centerIndex) * 0.0015;
-
-        // Tooltip text with selected metric highlighted in blue
-        let tooltip = `<strong>${reachId}</strong><br><strong>${variable}</strong><br><ul style="padding-left: 16px;">`;
-        relatedMetrics.forEach(m => {
-          const g = m.metric_grade || "No Data";
-          if (m.metric === metric) {
-            tooltip += `<li><strong style='color:blue;'>${m.metric}: ${g}</strong></li>`;
-          } else {
-            tooltip += `<li>${m.metric}: <strong>${g}</strong></li>`;
-          }
-        });
-        tooltip += `</ul>`;
-
-        segments.forEach(segment => {
-          const offsetCoords = offsetLine(segment, offset);
-          const latlngs = offsetCoords.map(([lng, lat]) => [lat, lng]);
-
-const polyline = L.polyline(latlngs, {
-  color: color,
-  weight: 3,
-  opacity: 0.7
-})
-.bindTooltip(tooltip, { sticky: true })
-.on("mouseover", function () {
-  metricLineGroups[key].forEach(l => l.setStyle({ weight: 8, opacity: 1 }));
-})
-.on("mouseout", function () {
-  metricLineGroups[key].forEach(l => l.setStyle({ weight: 3, opacity: 0.7 }));
-})
-.addTo(map);
-
-// Track each reach’s polylines
-if (!metricLineGroups[key]) metricLineGroups[key] = [];
-metricLineGroups[key].push(polyline);
-allLayers.push(polyline);
-        });
-      });
-
-      console.log(`✅ Drew ${allLayers.length} cleaned metric lines`);
-    }
-
-    Promise.all([
-      fetch('https://calaneve.github.io/streammap/LBD_ReachCharacterization_GCSWGS84.geojson').then(res => res.json()),
-      fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vROJntSYDQdg2vU1VTlMy8E-qOsSe9wr5_JMj1n1ks2wonNsk-JippjXmzizJJ9_BfgwMzzBV0Af50h/pub?gid=820977230&single=true&output=csv')
-        .then(res => res.text())
-        .then(csv => Papa.parse(csv, { header: true }).data)
-    ]).then(([geojson, metrics]) => {
-      const dropdown = document.getElementById('variableFilter');
-      drawMetricLines(metrics, geojson, dropdown.value);
-
-      dropdown.addEventListener('change', function () {
-        drawMetricLines(metrics, geojson, this.value);
-      });
+    let tooltip = `<strong>${reachId}</strong><br><strong>${row.variable}</strong><ul>`;
+    relatedMetrics.forEach(m => {
+      const g = m.metric_grade || "No Data";
+      tooltip += m.metric === metric
+        ? `<li><strong style='color:blue;'>${m.metric}: ${g}</strong></li>`
+        : `<li>${m.metric}: <strong>${g}</strong></li>`;
     });
+    tooltip += '</ul>';
+
+    segments.forEach(segment => {
+      const offsetCoords = offsetLine(segment, offset);
+      const latlngs = offsetCoords.map(([lng, lat]) => [lat, lng]);
+      const polyline = L.polyline(latlngs, {
+        color: gradeColors[grade], weight: 3, opacity: 0.7
+      })
+      .bindTooltip(tooltip, { sticky: true })
+      .on("mouseover", () => metricLineGroups[key].forEach(l => l.setStyle({ weight: 8, opacity: 1 })))
+      .on("mouseout", () => metricLineGroups[key].forEach(l => l.setStyle({ weight: 3, opacity: 0.7 })))
+      .addTo(map);
+
+      if (!metricLineGroups[key]) metricLineGroups[key] = [];
+      metricLineGroups[key].push(polyline);
+      metricLayers.push(polyline);
+    });
+  });
+}
+
+function renderMap() {
+  clearMapLayers();
+  if (currentView === 'summary') drawSummaryMap();
+  else drawMetricMap();
+}
+
+function handleUpdate() {
+  document.getElementById('loading').style.display = 'block';
+  const previousParam = parameterSelect.value;
+  const previousVariable = variableFilter.value;
+  Promise.all([
+    fetch(geojsonUrl).then(res => res.json()),
+    fetch(summaryCsvUrl).then(res => res.text()),
+    fetch(metricCsvUrl).then(res => res.text())
+  ]).then(([geo, summaryText, metricText]) => {
+    geojsonData = geo;
+    const summaryRows = summaryText.trim().split('
+').map(r => r.split(','));
+    const headers = summaryRows[0];
+    summaryData = {};
+    headers.slice(2).forEach(col => {
+      if (!parameterSelect.querySelector(`option[value='${col}']`)) {
+        parameterSelect.innerHTML += `<option value="${col}">${col}</option>`;
+      }
+    });
+    summaryRows.slice(1).forEach(row => {
+      const obj = {};
+      headers.forEach((key, i) => obj[key] = row[i]?.trim());
+      summaryData[obj.reach_id] = obj;
+    });
+    parameterSelect.value = previousParam;
+
+    metricData = Papa.parse(metricText, { header: true }).data;
+    variableFilter.value = previousVariable;
+    renderMap();
+    document.getElementById('loading').style.display = 'none';
+  });
+}
+
+// Wire up controls
+viewToggle.addEventListener('change', () => {
+  currentView = viewToggle.value;
+  updateDropdownStates();
+  renderMap();
+});
+
+parameterSelect.addEventListener('change', renderMap);
+variableFilter.addEventListener('change', renderMap);
+document.querySelectorAll('.gradeFilter').forEach(cb => cb.addEventListener('change', renderMap));
+updateButton.addEventListener('click', handleUpdate);
+
+document.getElementById('reachSearch').addEventListener('input', function () {
+  const query = this.value.trim().toLowerCase();
+  const matches = (currentView === 'summary' && summaryLayer)
+    ? summaryLayer.getLayers().filter(l => l.feature.properties.reach_id.toLowerCase().includes(query))
+    : metricLayers.filter(l => l.getTooltip().getContent().toLowerCase().includes(query));
+
+  if (matches.length) {
+    matches.forEach(m => m.openTooltip());
+  }
+});
+
+updateDropdownStates();
+handleUpdate();
   </script>
 </body>
 </html>
+
 
 
 
