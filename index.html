@@ -51,6 +51,7 @@
       background-color: #eee;
     }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body>
   <div class="search-box">
@@ -259,7 +260,9 @@ function drawMetricMap() {
         color: gradeColors[grade], weight: 3, opacity: 0.7
       })
       .bindTooltip(tooltip, { sticky: true })
-      .on("mouseover", () => metricLineGroups[key].forEach(l => l.setStyle({ weight: 8, opacity: 1 })))
+      if (metricLineGroups[key]) {
+  metricLineGroups[key].forEach(l => l.setStyle(...));
+}
       .on("mouseout", () => metricLineGroups[key].forEach(l => l.setStyle({ weight: 3, opacity: 0.7 })))
       .addTo(map);
 
@@ -286,7 +289,7 @@ function handleUpdate() {
     fetch(metricCsvUrl).then(res => res.text())
   ]).then(([geo, summaryText, metricText]) => {
     geojsonData = geo;
-    const summaryRows = summaryText.trim().split('\n').map(r => r.split(','));
+    const summaryRows = summaryText.trim().split("\n").map(r => r.split(","));
     const headers = summaryRows[0];
     summaryData = {};
 headers.slice(2).forEach(col => {
