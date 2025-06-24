@@ -150,15 +150,24 @@ function drawSummaryMap() {
   const grades = getActiveGradeFilters();
 
   summaryLayer = L.geoJSON(geojsonData, {
-filter: f => {
-  const grade = (summaryData[f.properties.reach_id]?.[param] || 'No Data').trim().toUpperCase();
-  return grades.includes(grade);
-},
-style: f => {
-  const grade = (summaryData[f.properties.reach_id]?.[param] || 'No Data').trim().toUpperCase();
-  return { color: gradeColors[grade] || 'gray', weight: 6 };
-},
-
+    filter: f => {
+      const raw = summaryData[f.properties.reach_id]?.[param];
+      if (!raw) return grades.includes("No Data");  // fallback if missing
+      const grade = raw.trim().toUpperCase();
+      const included = grades.includes(grade);
+      if (!included) {
+        console.log(`Skipping reach ${f.properties.reach_id} with grade "${grade}"`);
+      }
+      return included;
+    },
+    style: f => {
+      const raw = summaryData[f.properties.reach_id]?.[param];
+      const grade = raw ? raw.trim().toUpperCase() : "No Data";
+      return {
+        color: gradeColors[grade] || 'gray',
+        weight: 6
+      };
+    },
     onEachFeature: (feature, layer) => {
       const rec = summaryData[feature.properties.reach_id];
       if (!rec) return;
@@ -173,6 +182,7 @@ style: f => {
     }
   }).addTo(map);
 }
+
 
 function drawMetricMap() {
   const selectedVariable = parameterSelector.value;
