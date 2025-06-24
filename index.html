@@ -133,11 +133,6 @@ function getActiveGradeFilters() {
   return Array.from(document.querySelectorAll('.gradeFilter:checked')).map(cb => cb.value);
 }
 
-function updateDropdownStates() {
-  const isSummary = currentView === 'summary';
-  parameterSelect.disabled = !isSummary;
-  variableFilter.disabled = isSummary;
-}
 
 function offsetLine(coords, offset) {
   return coords.map(([lng, lat]) => [lng, lat + offset]);
@@ -212,20 +207,24 @@ function drawMetricMap() {
     });
     tooltip += '</ul>';
 
-    segments.forEach(segment => {
-      const offsetCoords = offsetLine(segment, offset);
-      const latlngs = offsetCoords.map(([lng, lat]) => [lat, lng]);
-      const polyline = L.polyline(latlngs, {
-        color: gradeColors[grade], weight: 3, opacity: 0.7
-      })
-      .bindTooltip(tooltip, { sticky: true })
-      .on("mouseover", () => metricLineGroups[key].forEach(l => l.setStyle({ weight: 8, opacity: 1 })))
-      .on("mouseout", () => metricLineGroups[key].forEach(l => l.setStyle({ weight: 3, opacity: 0.7 })))
-      .addTo(map);
+segments.forEach(segment => {
+  const offsetCoords = offsetLine(segment, offset);
+  const latlngs = offsetCoords.map(([lng, lat]) => [lat, lng]);
 
-      if (!metricLineGroups[key]) metricLineGroups[key] = [];
-      metricLineGroups[key].push(polyline);
-      metricLayers.push(polyline);
+  if (!metricLineGroups[key]) metricLineGroups[key] = [];
+
+  const polyline = L.polyline(latlngs, {
+    color: gradeColors[grade],
+    weight: 3,
+    opacity: 0.7
+  })
+  .bindTooltip(tooltip, { sticky: true })
+  .on("mouseover", () => metricLineGroups[key].forEach(l => l.setStyle({ weight: 8, opacity: 1 })))
+  .on("mouseout", () => metricLineGroups[key].forEach(l => l.setStyle({ weight: 3, opacity: 0.7 })))
+  .addTo(map);
+
+  metricLineGroups[key].push(polyline);
+  metricLayers.push(polyline);
     });
   });
 }
@@ -239,57 +238,75 @@ else drawMetricMap();
 
 function handleUpdate() {
   document.getElementById('loading').style.display = 'block';
-  const previousParam = parameterSelect.value;
-  const previousVariable = variableFilter.value;
+
+  // Save previously selected value from unified dropdown
+  const previousParam = parameterSelector.value;
+
   Promise.all([
     fetch(geojsonUrl).then(res => res.json()),
     fetch(summaryCsvUrl).then(res => res.text()),
     fetch(metricCsvUrl).then(res => res.text())
-  ]).then(([geo, summaryText, metricText]) => {
+  ])
+  .then(([geo, summaryText, metricText]) => {
     geojsonData = geo;
+
+    // Process summary data
     const summaryRows = summaryText.trim().split('\n').map(r => r.split(','));
     const headers = summaryRows[0];
     summaryData = {};
-// Clear previous options from unified dropdown
-parameterSelector.innerHTML = "";
 
-// Collect parameters from summary data
-const summaryParams = new Set();
-headers.slice(2).forEach(col => {
-  const cleanCol = col.replace(/\r|\n/g, "").trim();
-  summaryParams.add(cleanCol);
-});
+    // Clear previous options from dropdown
+    parameterSelector.innerHTML = "";
 
-// Parse metric data
-metricData = Papa.parse(metricText, { header: true }).data;
+    // Collect parameters from summary data
+    const summaryParams = new Set();
+    headers.slice(2).forEach(col => {
+      const cleanCol = col.replace(/\r|\n/g, "").trim();
+      summaryParams.add(cleanCol);
+    });
 
-// Collect variables from metric data
-const metricVariables = new Set();
-metricData.forEach(row => {
-  if (row.variable) metricVariables.add(row.variable.trim());
-});
+    // Parse metric data
+    metricData = Papa.parse(metricText, { header: true }).data;
 
-// Combine and add all unique options to unified dropdown
-const combinedOptions = new Set([...summaryParams, ...metricVariables]);
-combinedOptions.forEach(item => {
-  const option = document.createElement("option");
-  option.value = item;
-  option.textContent = item;
-  parameterSelector.appendChild(option);
-});
+    // Collect variables from metric data
+    const metricVariables = new Set();
+    metricData.forEach(row => {
+      if (row.variable) metricVariables.add(row.variable.trim());
+    });
 
+    // Combine both sets and populate dropdown
+    const combinedOptions = new Set([...summaryParams, ...metricVariables]);
+    combinedOptions.forEach(item => {
+      const option = document.createElement("option");
+      option.value = item;
+      option.textContent = item;
+      parameterSelector.appendChild(option);
+    });
+
+    // Restore previous selection if still available
+    if ([...combinedOptions].includes(previousParam)) {
+      parameterSelector.value = previousParam;
+    } else {
+      parameterSelector.selectedIndex = 0;
+    }
+
+    // Populate summaryData
     summaryRows.slice(1).forEach(row => {
       const obj = {};
       headers.forEach((key, i) => obj[key] = row[i]?.trim());
       summaryData[obj.reach_id] = obj;
     });
-    parameterSelect.value = previousParam;
 
-  
     renderMap();
     document.getElementById('loading').style.display = 'none';
+  })
+  .catch(error => {
+    console.error("Data loading error:", error);
+    document.getElementById('loading').style.display = 'none';
+    alert("Error loading data. Please try again.");
   });
 }
+
 
 // Wire up control events
 parameterSelector.addEventListener('change', renderMap);
@@ -317,7 +334,6 @@ document.getElementById('reachSearch').addEventListener('input', function () {
   }
 });
 
-updateDropdownStates();
     let subwatershedLayer;
 const subwatershedUrl = "https://calaneve.github.io/streammap/StreamGroupSubwatersheds.geojson";
 
