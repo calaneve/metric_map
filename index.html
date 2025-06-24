@@ -15,7 +15,20 @@
       border: 1px solid #ccc;
       font-family: sans-serif;
     }
-    #controls { top: 120px; right: 10px; width: 240px; }
+    #controls {
+  top: 120px;
+  right: 10px;
+  width: 240px;
+  position: absolute;
+  z-index: 1000;
+  background: white;
+  padding: 8px;
+  border: 1px solid #ccc;
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
     #legend { bottom: 10px; left: 10px; }
     #subwatershedToggle { bottom: 180px; left: 10px; }
     #subLegend { bottom: 220px; left: 10px; display: none; }
@@ -350,18 +363,23 @@ updateButton.addEventListener('click', handleUpdate);
 document.getElementById('reachSearch').addEventListener('input', function () {
   const query = this.value.trim().toLowerCase();
 
-  // Reset all tooltips and line styles
+  // === Reset styles and close tooltips ===
   if (currentView === 'summary' && summaryLayer) {
     summaryLayer.eachLayer(layer => {
       if (layer.closeTooltip) layer.closeTooltip();
-      layer.setStyle({ weight: 6, opacity: 1, color: gradeColors[
-        (summaryData[layer.feature.properties.reach_id]?.[parameterSelector.value.trim()] || 'No Data').trim().toUpperCase()
-      ] || 'gray' }); // restore original color
+      const raw = summaryData[layer.feature.properties.reach_id]?.[parameterSelector.value.trim()];
+      const grade = raw ? raw.trim().toUpperCase() : "NO DATA";
+      const color = gradeColors[grade] || 'gray';
+      layer.setStyle({ weight: 6, opacity: 1, color });
     });
   } else if (currentView === 'metric') {
     metricLayers.forEach(layer => {
       if (layer.closeTooltip) layer.closeTooltip();
-      layer.setStyle({ weight: 3, opacity: 0.7, color: layer.options.originalColor || 'gray' }); // restore original
+      if (!layer.options.originalColor) {
+        // Store original color if not already saved
+        layer.options.originalColor = layer.options.color;
+      }
+      layer.setStyle({ weight: 3, opacity: 0.7, color: layer.options.originalColor });
     });
   }
 
@@ -378,15 +396,22 @@ document.getElementById('reachSearch').addEventListener('input', function () {
       m.setStyle({ weight: 10, opacity: 1, color: 'blue' });
     });
   } else if (currentView === 'metric') {
-    matches = metricLayers.filter(l =>
-      l.getTooltip()?.getContent()?.toLowerCase().includes(query)
-    );
+    matches = metricLayers.filter(l => {
+      try {
+        const content = l.getTooltip()?.getContent()?.toLowerCase();
+        return content && content.includes(query);
+      } catch (e) {
+        return false;
+      }
+    });
+
     matches.forEach(m => {
       m.openTooltip();
       m.setStyle({ weight: 8, opacity: 1, color: 'blue' });
     });
   }
 });
+
 
 
     let subwatershedLayer;
