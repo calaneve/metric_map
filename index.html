@@ -246,15 +246,17 @@ segments.forEach(segment => {
 
   if (!metricLineGroups[key]) metricLineGroups[key] = [];
 
-  const polyline = L.polyline(latlngs, {
-    color: gradeColors[grade],
-    weight: 3,
-    opacity: 0.7
-  })
-  .bindTooltip(tooltip, { sticky: true })
-  .on("mouseover", () => metricLineGroups[key].forEach(l => l.setStyle({ weight: 8, opacity: 1 })))
-  .on("mouseout", () => metricLineGroups[key].forEach(l => l.setStyle({ weight: 3, opacity: 0.7 })))
-  .addTo(map);
+const polyline = L.polyline(latlngs, {
+  color: gradeColors[grade],
+  weight: 3,
+  opacity: 0.7
+})
+.bindTooltip(tooltip, { sticky: true })
+.on("mouseover", () => metricLineGroups[key].forEach(l => l.setStyle({ weight: 8, opacity: 1 })))
+.on("mouseout", () => metricLineGroups[key].forEach(l => l.setStyle({ weight: 3, opacity: 0.7 })))
+.addTo(map);
+
+polyline.reach_id = reachId.toLowerCase(); //
 
   metricLineGroups[key].push(polyline);
   metricLayers.push(polyline);
@@ -363,7 +365,7 @@ updateButton.addEventListener('click', handleUpdate);
 document.getElementById('reachSearch').addEventListener('input', function () {
   const query = this.value.trim().toLowerCase();
 
-  // === Reset styles and close tooltips ===
+  // === RESET STYLES AND CLOSE TOOLTIPS ===
   if (currentView === 'summary' && summaryLayer) {
     summaryLayer.eachLayer(layer => {
       if (layer.closeTooltip) layer.closeTooltip();
@@ -376,7 +378,7 @@ document.getElementById('reachSearch').addEventListener('input', function () {
     metricLayers.forEach(layer => {
       if (layer.closeTooltip) layer.closeTooltip();
       if (!layer.options.originalColor) {
-        // Store original color if not already saved
+        // cache original color once
         layer.options.originalColor = layer.options.color;
       }
       layer.setStyle({ weight: 3, opacity: 0.7, color: layer.options.originalColor });
@@ -385,6 +387,7 @@ document.getElementById('reachSearch').addEventListener('input', function () {
 
   if (!query) return;
 
+  // === SEARCH AND HIGHLIGHT ===
   let matches = [];
 
   if (currentView === 'summary' && summaryLayer) {
@@ -396,18 +399,13 @@ document.getElementById('reachSearch').addEventListener('input', function () {
       m.setStyle({ weight: 10, opacity: 1, color: 'blue' });
     });
   } else if (currentView === 'metric') {
-    matches = metricLayers.filter(l => {
-      try {
-        const content = l.getTooltip()?.getContent()?.toLowerCase();
-        return content && content.includes(query);
-      } catch (e) {
-        return false;
-      }
-    });
+matches = metricLayers.filter(layer => {
+  return layer.reach_id && layer.reach_id.includes(query);
+});
 
-    matches.forEach(m => {
-      m.openTooltip();
-      m.setStyle({ weight: 8, opacity: 1, color: 'blue' });
+    matches.forEach(layer => {
+      layer.openTooltip();
+      layer.setStyle({ weight: 8, opacity: 1, color: 'blue' });
     });
   }
 });
