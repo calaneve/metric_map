@@ -349,14 +349,45 @@ updateButton.addEventListener('click', handleUpdate);
 
 document.getElementById('reachSearch').addEventListener('input', function () {
   const query = this.value.trim().toLowerCase();
-  const matches = (currentView === 'summary' && summaryLayer)
-    ? summaryLayer.getLayers().filter(l => l.feature.properties.reach_id.toLowerCase().includes(query))
-    : metricLayers.filter(l => l.getTooltip().getContent().toLowerCase().includes(query));
 
-  if (matches.length) {
-    matches.forEach(m => m.openTooltip());
+  // Reset all tooltips and line styles
+  if (currentView === 'summary' && summaryLayer) {
+    summaryLayer.eachLayer(layer => {
+      if (layer.closeTooltip) layer.closeTooltip();
+      layer.setStyle({ weight: 6, opacity: 1, color: gradeColors[
+        (summaryData[layer.feature.properties.reach_id]?.[parameterSelector.value.trim()] || 'No Data').trim().toUpperCase()
+      ] || 'gray' }); // restore original color
+    });
+  } else if (currentView === 'metric') {
+    metricLayers.forEach(layer => {
+      if (layer.closeTooltip) layer.closeTooltip();
+      layer.setStyle({ weight: 3, opacity: 0.7, color: layer.options.originalColor || 'gray' }); // restore original
+    });
+  }
+
+  if (!query) return;
+
+  let matches = [];
+
+  if (currentView === 'summary' && summaryLayer) {
+    matches = summaryLayer.getLayers().filter(l =>
+      l.feature?.properties?.reach_id?.toLowerCase().includes(query)
+    );
+    matches.forEach(m => {
+      m.openTooltip();
+      m.setStyle({ weight: 10, opacity: 1, color: 'blue' });
+    });
+  } else if (currentView === 'metric') {
+    matches = metricLayers.filter(l =>
+      l.getTooltip()?.getContent()?.toLowerCase().includes(query)
+    );
+    matches.forEach(m => {
+      m.openTooltip();
+      m.setStyle({ weight: 8, opacity: 1, color: 'blue' });
+    });
   }
 });
+
 
     let subwatershedLayer;
 const subwatershedUrl = "https://calaneve.github.io/streammap/StreamGroupSubwatersheds.geojson";
