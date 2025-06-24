@@ -146,14 +146,15 @@ function clearMapLayers() {
 }
 
 function drawSummaryMap() {
-  const param = parameterSelector.value.trim();
+  const param = parameterSelector.value.trim(); // ensure no trailing space
   const grades = getActiveGradeFilters();
-console.log("Selected parameter:", param);
+
+  console.log("Selected parameter:", param);
+
   summaryLayer = L.geoJSON(geojsonData, {
     filter: f => {
       const raw = summaryData[f.properties.reach_id]?.[param];
-      if (!raw) return grades.includes("No Data");  // fallback if missing
-      const grade = raw.trim().toUpperCase();
+      const grade = raw ? raw.trim().toUpperCase() : "NO DATA";
       const included = grades.includes(grade);
       if (!included) {
         console.log(`Skipping reach ${f.properties.reach_id} with grade "${grade}"`);
@@ -162,7 +163,7 @@ console.log("Selected parameter:", param);
     },
     style: f => {
       const raw = summaryData[f.properties.reach_id]?.[param];
-      const grade = raw ? raw.trim().toUpperCase() : "No Data";
+      const grade = raw ? raw.trim().toUpperCase() : "NO DATA";
       return {
         color: gradeColors[grade] || 'gray',
         weight: 6
@@ -173,15 +174,17 @@ console.log("Selected parameter:", param);
       if (!rec) return;
       let content = `<strong>Reach ID: ${feature.properties.reach_id}</strong><br><table>`;
       for (const key in rec) {
+        const cleanKey = key.trim(); // <-- CRITICAL
         const val = rec[key] || 'No Data';
-        const highlight = key === param;
-        content += `<tr><td>${highlight ? `<strong style='color:blue;'>${key}</strong>` : key}</td><td>=</td><td>${highlight ? `<strong style='color:blue;'>${val}</strong>` : val}</td></tr>`;
+        const highlight = cleanKey === param; // normalized comparison
+        content += `<tr><td>${highlight ? `<strong style='color:blue;'>${cleanKey}</strong>` : cleanKey}</td><td>=</td><td>${highlight ? `<strong style='color:blue;'>${val}</strong>` : val}</td></tr>`;
       }
       content += '</table>';
       layer.bindTooltip(content, { sticky: true });
     }
   }).addTo(map);
 }
+
 
 
 function drawMetricMap() {
@@ -310,7 +313,11 @@ function handleUpdate() {
     // Populate summaryData
     summaryRows.slice(1).forEach(row => {
       const obj = {};
-      headers.forEach((key, i) => obj[key] = row[i]?.trim());
+      headers.forEach((key, i) => {
+  const cleanKey = key.trim();
+  obj[cleanKey] = row[i]?.trim();
+});
+
       summaryData[obj.reach_id] = obj;
     });
 
