@@ -146,9 +146,9 @@ function clearMapLayers() {
 }
 
 function drawSummaryMap() {
-  const param = parameterSelector.value;
+  const param = parameterSelector.value.trim();
   const grades = getActiveGradeFilters();
-
+console.log("Selected parameter:", param);
   summaryLayer = L.geoJSON(geojsonData, {
     filter: f => {
       const raw = summaryData[f.properties.reach_id]?.[param];
