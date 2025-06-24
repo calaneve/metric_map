@@ -121,7 +121,7 @@
   <script>
     // ✅ JavaScript logic for full functionality will go here
 
-const map = L.map('map').setView([39.9, -105.9], 11);
+const map = L.map('map').setView([40.1, -105.87], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 18
 }).addTo(map);
@@ -351,6 +351,14 @@ function getGroupColor(group) {
   };
   return colors[group] || "#aaaaaa";
 }
+     fetch("https://calaneve.github.io/streammap/LBD_CEA_Boundary.geojson")
+      .then(res => res.json())
+      .then(data => {
+        const ceaLayer = L.geoJSON(data, {
+          style: { color: "purple", weight: 2, fill: false, fillOpacity: 0 }
+        }).addTo(map);
+        map.fitBounds(ceaLayer.getBounds());
+      });
 
 handleUpdate();
   </script>
