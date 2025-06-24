@@ -403,10 +403,17 @@ matches = metricLayers.filter(layer => {
   return layer.reach_id && layer.reach_id.includes(query);
 });
 
-    matches.forEach(layer => {
-      layer.openTooltip();
-      layer.setStyle({ weight: 8, opacity: 1, color: 'blue' });
-    });
+const shown = new Set();
+
+matches.forEach(layer => {
+  // Only show one tooltip per reach_id
+  if (!shown.has(layer.reach_id)) {
+    layer.openTooltip();
+    shown.add(layer.reach_id);
+  }
+  layer.setStyle({ weight: 8, opacity: 1, color: 'blue' });
+});
+
   }
 });
 
