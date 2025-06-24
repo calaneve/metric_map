@@ -261,8 +261,8 @@ function handleUpdate() {
     fetch(metricCsvUrl).then(res => res.text())
   ]).then(([geo, summaryText, metricText]) => {
     geojsonData = geo;
-    const summaryRows = summaryText.trim().split('
-').map(r => r.split(','));
+    const summaryRows = summaryText.trim().split("
+").map(r => r.split(","));.map(r => r.split(','));
     const headers = summaryRows[0];
     summaryData = {};
     headers.slice(2).forEach(col => {
