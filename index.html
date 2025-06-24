@@ -114,22 +114,47 @@
     <div><span style="display:inline-block;width:16px;height:16px;background:gray;"></span> No Data</div>
   </div>
 
-  <div id="map"></div>
-
+<div id="map"></div>
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script>
-    // ✅ JavaScript logic for full functionality will go here
+// Define base layers
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap'
+});
 
-const map = L.map('map').setView([39.9, -105.9], 11);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 18
+const esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  attribution: '© Esri'
+});
+
+const carto = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© CartoDB'
+});
+
+// Initialize map with default base layer
+const map = L.map('map', {
+  center: [40.1, -105.87],
+  zoom: 13,
+  layers: [osm]  // default base layer
+});
+
+// Prepare base and overlay maps for layer control
+const baseMaps = {
+  "OpenStreetMap": osm,
+  "Esri Satellite": esri,
+  "Carto Light": carto
+};
+
+const overlayMaps = {}; // placeholder to be filled in your temp site code
+L.control.layers(baseMaps, overlayMaps, {
+  collapsed: false,
+  position: 'topleft' // 👈 this moves it to the top left
 }).addTo(map);
 
 const geojsonUrl = 'https://calaneve.github.io/streammap/LBD_ReachCharacterization_GCSWGS84.geojson';
 const summaryCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vROJntSYDQdg2vU1VTlMy8E-qOsSe9wr5_JMj1n1ks2wonNsk-JippjXmzizJJ9_BfgwMzzBV0Af50h/pub?gid=61075690&single=true&output=csv';
 const metricCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vROJntSYDQdg2vU1VTlMy8E-qOsSe9wr5_JMj1n1ks2wonNsk-JippjXmzizJJ9_BfgwMzzBV0Af50h/pub?gid=820977230&single=true&output=csv';
 
+    
 let geojsonData, summaryData, metricData;
 let summaryLayer, metricLayers = [], metricLineGroups = {};
 let currentView = 'summary';
@@ -314,6 +339,15 @@ updateDropdownStates();
     let subwatershedLayer;
 const subwatershedUrl = "https://calaneve.github.io/streammap/StreamGroupSubwatersheds.geojson";
 
+    fetch("https://calaneve.github.io/streammap/LBD_CEA_Boundary.geojson")
+      .then(res => res.json())
+      .then(data => {
+        const ceaLayer = L.geoJSON(data, {
+          style: { color: "purple", weight: 2, fill: false, fillOpacity: 0 }
+        }).addTo(map);
+        map.fitBounds(ceaLayer.getBounds());
+      });
+    
 fetch(subwatershedUrl)
   .then(res => res.json())
   .then(data => {
