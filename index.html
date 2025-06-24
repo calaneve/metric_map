@@ -150,8 +150,15 @@ function drawSummaryMap() {
   const grades = getActiveGradeFilters();
 
   summaryLayer = L.geoJSON(geojsonData, {
-    filter: f => grades.includes((summaryData[f.properties.reach_id]?.[param] || 'No Data').trim()),
-    style: f => ({ color: gradeColors[(summaryData[f.properties.reach_id]?.[param] || 'No Data').trim()], weight: 6 }),
+filter: f => {
+  const grade = (summaryData[f.properties.reach_id]?.[param] || 'No Data').trim().toUpperCase();
+  return grades.includes(grade);
+},
+style: f => {
+  const grade = (summaryData[f.properties.reach_id]?.[param] || 'No Data').trim().toUpperCase();
+  return { color: gradeColors[grade] || 'gray', weight: 6 };
+},
+
     onEachFeature: (feature, layer) => {
       const rec = summaryData[feature.properties.reach_id];
       if (!rec) return;
