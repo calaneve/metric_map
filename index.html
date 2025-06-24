@@ -64,19 +64,8 @@
       <option value="metric">Metric View</option>
     </select>
 
-    <label for="parameterSelect"><strong>Summary Parameter:</strong></label>
-    <select id="parameterSelect"></select>
-
-    <label for="variableFilter"><strong>Metric Variable:</strong></label>
-    <select id="variableFilter">
-      <option value="Flow Regime">Flow Regime</option>
-      <option value="Water Quality">Water Quality</option>
-      <option value="Temperature">Temperature</option>
-      <option value="Sediment">Sediment</option>
-      <option value="Riparian">Riparian</option>
-      <option value="Geomorphology">Geomorphology</option>
-      <option value="Aquatic Ecosystem">Aquatic Ecosystem</option>
-    </select><br><br>
+    <label for="smartSelector"><strong>Select Parameter or Variable:</strong></label>
+<select id="smartSelector"></select><br><br>
 
     <strong>Show Grades:</strong><br>
     <label><input type="checkbox" class="gradeFilter" value="A" checked> A</label>
@@ -160,8 +149,7 @@ let geojsonData, summaryData, metricData;
 let summaryLayer, metricLayers = [], metricLineGroups = {};
 let currentView = 'summary';
 
-const parameterSelect = document.getElementById('parameterSelect');
-const variableFilter = document.getElementById('variableFilter');
+const smartSelector = document.getElementById('smartSelector');
 const viewToggle = document.getElementById('viewToggle');
 const updateButton = document.getElementById('updateButton');
 
@@ -174,10 +162,30 @@ function getActiveGradeFilters() {
   return Array.from(document.querySelectorAll('.gradeFilter:checked')).map(cb => cb.value);
 }
 
-function updateDropdownStates() {
-  const isSummary = currentView === 'summary';
-  parameterSelect.disabled = !isSummary;
-  variableFilter.disabled = isSummary;
+function updateSmartSelector() {
+  smartSelector.innerHTML = '';
+  if (currentView === 'summary') {
+    Object.keys(summaryData[Object.keys(summaryData)[0]] || {}).slice(2).forEach(col => {
+      const cleanCol = col.replace(/
+|
+/g, '').trim();
+      const option = document.createElement('option');
+      option.value = cleanCol;
+      option.textContent = cleanCol;
+      smartSelector.appendChild(option);
+    });
+  } else {
+    const metricOptions = [
+      "Flow Regime", "Water Quality", "Temperature", "Sediment",
+      "Riparian", "Geomorphology", "Aquatic Ecosystem"
+    ];
+    metricOptions.forEach(v => {
+      const option = document.createElement('option');
+      option.value = v;
+      option.textContent = v;
+      smartSelector.appendChild(option);
+    });
+  }
 }
 
 function offsetLine(coords, offset) {
@@ -192,7 +200,7 @@ function clearMapLayers() {
 }
 
 function drawSummaryMap() {
-  const param = parameterSelect.value;
+  const param = smartSelector.value;
   const grades = getActiveGradeFilters();
 
   summaryLayer = L.geoJSON(geojsonData, {
@@ -218,7 +226,7 @@ function drawMetricMap() {
     console.warn("GeoJSON data not ready.");
     return;
   }
-  const selectedVariable = variableFilter.value;
+  const selectedVariable = smartSelector.value;
   const grades = getActiveGradeFilters();
 
   const reachMap = {};
@@ -332,12 +340,11 @@ headers.slice(2).forEach(col => {
 // Wire up controls
 viewToggle.addEventListener('change', () => {
   currentView = viewToggle.value;
-  updateDropdownStates();
+  updateSmartSelector();
   renderMap();
 });
 
-parameterSelect.addEventListener('change', renderMap);
-variableFilter.addEventListener('change', renderMap);
+smartSelector.addEventListener('change', renderMap);
 document.querySelectorAll('.gradeFilter').forEach(cb => cb.addEventListener('change', renderMap));
 updateButton.addEventListener('click', handleUpdate);
 
@@ -407,6 +414,7 @@ handleUpdate();
   </script>
 </body>
 </html>
+
 
 
 
