@@ -154,7 +154,7 @@ function drawSummaryMap() {
   summaryLayer = L.geoJSON(geojsonData, {
     filter: f => {
       const raw = summaryData[f.properties.reach_id]?.[param];
-      const grade = raw ? raw.trim().toUpperCase() : "NO DATA";
+      const grade = raw ? raw.trim().toUpperCase() : "No Data";
       const included = grades.includes(grade);
       if (!included) {
         console.log(`Skipping reach ${f.properties.reach_id} with grade "${grade}"`);
@@ -163,7 +163,7 @@ function drawSummaryMap() {
     },
     style: f => {
       const raw = summaryData[f.properties.reach_id]?.[param];
-      const grade = raw ? raw.trim().toUpperCase() : "NO DATA";
+      const grade = raw ? raw.trim().toUpperCase() : "No Data";
       return {
         color: gradeColors[grade] || 'gray',
         weight: 6
