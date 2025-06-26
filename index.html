@@ -67,17 +67,18 @@
     /* Fixed sunburst chart box on top-left */
 #sunburstContainer {
   position: fixed;
-  top: 10px;
+  top: 90px; /* 👈 pushes it down below zoom/layer controls */
   left: 10px;
-  z-index: 1000;
+  z-index: 1100; /* higher than Leaflet UI */
   width: 320px;
   height: 320px;
   background: white;
   border: 1px solid #ccc;
   border-radius: 8px;
   padding: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); /* subtle shadow for depth */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
+
   </style>
   <!-- Load Plotly.js for client-side sunburst chart rendering -->
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -553,7 +554,7 @@ function processSunburstData(filteredData) {
     const varGrade = row.variable_grade?.trim() || "No Data";
     const metricGrade = row.metric_grade?.trim() || "No Data";
     const varLabel = `${row.variable?.trim()} (${varGrade})`;
-    const metricLabel = `${row.metric?.trim()} (${metricGrade})`;
+    const metricLabel = `${row.variable?.trim()} → ${row.metric?.trim()} (${metricGrade})`;
 
     // Create parent node if it doesn't exist
     if (!nodeCounts[varLabel]) {
@@ -601,7 +602,9 @@ function processSunburstData(filteredData) {
 
 // Filter metric data by reach_id and call sunburst rendering
 function handleReachClick(reachId) {
-  const filteredData = metricData.filter(row => row.reach_id === reachId);
+  const filteredData = metricData.filter(row => row.reach_id?.toLowerCase() === reachId.toLowerCase());
+  console.log("Clicked reach:", reachId);
+  console.log("Filtered metric data:", filteredData);
   processSunburstData(filteredData);
 }
 
