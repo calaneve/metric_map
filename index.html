@@ -67,9 +67,9 @@
     /* Fixed sunburst chart box on top-left */
 #sunburstContainer {
   position: fixed;
-  top: 90px; /* 👈 pushes it down below zoom/layer controls */
-  left: 10px;
-  z-index: 1100; /* higher than Leaflet UI */
+  bottom: 10px;         /* 👈 position from the bottom */
+  right: 10px;          /* 👈 position from the right */
+  z-index: 1100;
   width: 320px;
   height: 320px;
   background: white;
@@ -535,11 +535,26 @@ function drawSunburst(data) {
     parents: data.parents,
     values: data.values,
     branchvalues: 'total',
-    marker: { colors: data.colors }
+    marker: { colors: data.colors },
+    hoverinfo: "label+text", // enables custom text
+    text: data.labels.map(label => {
+      // extract grade from label like "Temperature (A)"
+      const match = label.match(/\(([^)]+)\)$/);
+      const grade = match ? match[1] : "No Data";
+      return `Grade: ${grade}`;
+    }),
+    hovertemplate: "%{label}<br>%{text}<extra></extra>"
   }], {
-    margin: { l: 0, r: 0, b: 0, t: 0 }
+    margin: { l: 0, r: 0, b: 0, t: 0 },
+    sunburst: {
+      rotation: 90,
+      tiling: {
+        orientation: 'radial'
+      }
+    }
   });
 }
+
 
 function processSunburstData(filteredData) {
   // Extract the grade for the center/root node from the first row
