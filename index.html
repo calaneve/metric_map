@@ -566,6 +566,9 @@ function processSunburstData(filteredData) {
     const varGrade = row.variable_grade?.trim() || "No Data";
     const metricName = row.metric?.trim();
     const metricGrade = row.metric_grade?.trim() || "No Data";
+    const reachId = filteredData[0]?.reach_id?.trim() || "Unknown Reach";
+const overallGrade = filteredData[0]?.overall_grade?.trim() || "No Data";
+const chartTitle = `${reachId} : ${overallGrade}`;
 
     if (!varName || !metricName) return;
 
@@ -607,6 +610,7 @@ const metricLabel = `${metricName}: ${metricGrade}`;
     parents,
     values,
     colors: labels.map(label => colorMap[label])
+     title: chartTitle  // 
   });
 }
 
