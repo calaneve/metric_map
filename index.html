@@ -536,16 +536,15 @@ function drawSunburst(data) {
     values: data.values,
     branchvalues: 'total',
     marker: { colors: data.colors },
-    hoverinfo: "label+text", // enables custom text
-    text: data.labels.map(label => {
-      // extract grade from label like "Temperature (A)"
-      const match = label.match(/\(([^)]+)\)$/);
-      const grade = match ? match[1] : "No Data";
-      return `Grade: ${grade}`;
-    }),
-    hovertemplate: "%{label}<br>%{text}<extra></extra>"
+    hoverinfo: "label"  // only show the label
   }], {
-    margin: { l: 0, r: 0, b: 0, t: 0 },
+    title: {
+      text: data.title || "",
+      font: { size: 16 },
+      xanchor: 'center',
+      x: 0.5
+    },
+    margin: { l: 0, r: 0, b: 0, t: 30 },
     sunburst: {
       rotation: 90,
       tiling: {
@@ -554,7 +553,6 @@ function drawSunburst(data) {
     }
   });
 }
-
 
 function processSunburstData(filteredData) {
   const labels = [];
@@ -571,8 +569,8 @@ function processSunburstData(filteredData) {
 
     if (!varName || !metricName) return;
 
-    const varLabel = `${varName} (${varGrade})`;
-    const metricLabel = `${varName} → ${metricName} (${metricGrade})`;
+const varLabel = `${varName}: ${varGrade}`;
+const metricLabel = `${metricName}: ${metricGrade}`;
 
     // Add variable-level node (top level)
     if (!nodeCounts[varLabel]) {
