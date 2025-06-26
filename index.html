@@ -599,8 +599,18 @@ function processSunburstData(filteredData) {
   // Convert to Plotly sunburst input format
   for (const [label, { parent, count, color }] of Object.entries(nodeCounts)) {
     labels.push(label);
-    parents.push(parent)
+    parents.push(parent);
+    values.push(count);
+    colorMap[label] = color;
+  }
 
+  drawSunburst({
+    labels,
+    parents,
+    values,
+    colors: labels.map(label => colorMap[label])
+  });
+}
 
 // Filter metric data by reach_id and call sunburst rendering
 function handleReachClick(reachId) {
@@ -615,6 +625,12 @@ handleUpdate();
   </script>
 </body>
 </html>
+
+
+
+
+
+
 
 
 
