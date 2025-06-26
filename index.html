@@ -557,35 +557,33 @@ function drawSunburst(data) {
 
 
 function processSunburstData(filteredData) {
-  // Extract the grade for the center/root node from the first row
-  const rootGrade = filteredData[0]?.overall_grade?.trim() || "No Data";
-  const rootLabel = `Overall (${rootGrade})`;
-
-  // Initialize root node
-  const labels = [rootLabel];
-  const parents = [""];
+  const labels = [];
+  const parents = [];
   const values = [];
-  const colorMap = { [rootLabel]: gradeColors[rootGrade] || gradeColors["No Data"] };
+  const colorMap = {};
   const nodeCounts = {};
 
-  // Build label hierarchy
   filteredData.forEach(row => {
+    const varName = row.variable?.trim();
     const varGrade = row.variable_grade?.trim() || "No Data";
+    const metricName = row.metric?.trim();
     const metricGrade = row.metric_grade?.trim() || "No Data";
 
-    const varLabel = `${row.variable?.trim()} (${varGrade})`;
-    const metricLabel = `${row.variable?.trim()} → ${row.metric?.trim()} (${metricGrade})`;
+    if (!varName || !metricName) return;
 
-    // Add parent node if needed
+    const varLabel = `${varName} (${varGrade})`;
+    const metricLabel = `${varName} → ${metricName} (${metricGrade})`;
+
+    // Add variable-level node (top level)
     if (!nodeCounts[varLabel]) {
       nodeCounts[varLabel] = {
-        parent: rootLabel,
+        parent: "",  // No root — makes this a top-level node
         count: 0,
         color: gradeColors[varGrade] || gradeColors["No Data"]
       };
     }
 
-    // Add child node if needed
+    // Add metric-level node (child)
     if (!nodeCounts[metricLabel]) {
       nodeCounts[metricLabel] = {
         parent: varLabel,
@@ -598,26 +596,11 @@ function processSunburstData(filteredData) {
     nodeCounts[metricLabel].count += 1;
   });
 
-  // Total value for root
-  const total = Object.values(nodeCounts).reduce((sum, n) => sum + n.count, 0);
-  values.push(total);
-
-  // Build Plotly-compatible structure
+  // Convert to Plotly sunburst input format
   for (const [label, { parent, count, color }] of Object.entries(nodeCounts)) {
     labels.push(label);
-    parents.push(parent);
-    values.push(count);
-    colorMap[label] = color;
-  }
+    parents.push(parent)
 
-  // Draw the sunburst chart
-  drawSunburst({
-    labels,
-    parents,
-    values,
-    colors: labels.map(l => colorMap[l])
-  });
-}
 
 // Filter metric data by reach_id and call sunburst rendering
 function handleReachClick(reachId) {
