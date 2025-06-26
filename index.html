@@ -120,9 +120,37 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script>
 
-const map = L.map('map').setView([40.1, -105.87], 13);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 18
+// Define base layers
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap'
+});
+
+const esri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  attribution: '© Esri'
+});
+
+const carto = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© CartoDB'
+});
+
+// Initialize map with default base layer
+const map = L.map('map', {
+  center: [40.1, -105.87],
+  zoom: 13,
+  layers: [osm]  // default base layer
+});
+
+// Prepare base and overlay maps for layer control
+const baseMaps = {
+  "OpenStreetMap": osm,
+  "Esri Satellite": esri,
+  "Carto Light": carto
+};
+
+const overlayMaps = {}; // placeholder to be filled in your temp site code
+L.control.layers(baseMaps, overlayMaps, {
+  collapsed: false,
+  position: 'topleft' // 👈 this moves it to the top left
 }).addTo(map);
 
 const geojsonUrl = 'https://calaneve.github.io/streammap/LBD_ReachCharacterization_GCSWGS84.geojson';
