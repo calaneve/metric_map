@@ -81,7 +81,7 @@
 
   </style>
   <!-- Load Plotly.js for client-side sunburst chart rendering -->
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 </head>
 <body>
   <div class="search-box">
@@ -611,7 +611,7 @@ const metricLabel = `${metricName}: ${metricGrade}`;
     parents,
     values,
     colors: labels.map(label => colorMap[label]),
-     title: chartTitle  
+     title: chartTitle,  
     titleColor: titleColor
   });
 }
