@@ -74,12 +74,12 @@
   top: calc(120px + 260px); /* based on controls */
   z-index: 1100;
   width: 45vh;
-  height: 45vh;
-  background: white;
-  border: 1px solid #ccc;
+  height: 48vh;
+  background: transparent;
+  border: none
   border-radius: 8px;
   padding: 8px 8px 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: none;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -566,7 +566,7 @@ function drawSunburst(data) {
   lastChartData = data;  // save for resize handler
 
   const container = document.getElementById('sunburstContainer');
-  const size = Math.min(container.offsetWidth, container.offsetHeight) - 20;
+  const size = Math.min(container.offsetWidth, container.offsetHeight - paddingOffset);
 
   Plotly.newPlot('sunburstChart', [{
     type: "sunburst",
