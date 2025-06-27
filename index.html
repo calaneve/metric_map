@@ -32,6 +32,9 @@
 
     #legend { bottom: 10px; left: 10px; }
     #subwatershedToggle { bottom: 180px; left: 10px; }
+    #sunburstChart {
+  transition: all 0.3s ease;
+}
     #subLegend { bottom: 220px; left: 10px; display: none; }
     .search-box { top: 60px; right: 10px; }
     #updateButton {
@@ -70,8 +73,8 @@
   right: 10px;
   top: calc(120px + 260px); /* based on controls */
   z-index: 1100;
-  width: 55vh;
-  height: 55vh;
+  width: 45vh;
+  height: 45vh;
   background: white;
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -81,25 +84,6 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-    .sunburstHeader {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  padding: 6px;
-  font-weight: bold;
-  font-size: 13px;
-  color: black; /* readable */
-  border-bottom: 1px solid #ccc;
-}
-
-.gradeBadge {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 1px solid #444;
 }
 
 .gradeRow {
@@ -176,13 +160,11 @@
     <div><span style="display:inline-block;width:16px;height:16px;background:red;"></span> F</div>
     <div><span style="display:inline-block;width:16px;height:16px;background:gray;"></span> No Data</div>
   </div>
-  <div id="sunburstContainer">
-      <div id="sunburstHeader" class="sunburstHeader">
-    <span id="reachTitle"></span>
-    <span id="gradeBadge" class="gradeBadge"></span>
-  </div>
-  <div id="sunburstChart"></div>
+<div id="sunburstContainer">
+  <div id="sunburstToggleIcon" style="align-self: flex-end; cursor: pointer; font-size: 18px; margin-bottom: 4px;">▾</div>
+  <div id="sunburstChart" style="display: none;"></div>
 </div>
+
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -597,13 +579,13 @@ function drawSunburst(data) {
   }], {
     width: size,
     height: size,
-    // title: {
-    //   text: data.title || "",
-    //   font: { size: 14, color: data.titleColor || "#000" },
-    //   xanchor: 'center',
-    //   x: 0.5
-    // },
-    margin: { l: 0, r: 0, b: 0, t: 30 },
+    title: {
+      text: data.title || "",
+      font: { size: 15, color: data.titleColor || "#000" },
+      xanchor: 'center',
+      x: 0.5
+    },
+    margin: { l: 0, r: 0, b: 0, t: 20 },
     sunburst: {
       rotation: 90,
       tiling: { orientation: 'radial' }
@@ -620,8 +602,7 @@ function processSunburstData(filteredData) {
   const reachId = filteredData[0]?.reach_id?.trim() || "Unknown Reach";
   const overallGrade = filteredData[0]?.overall_grade?.trim() || "No Data";
   const chartTitle = `${reachId} : ${overallGrade}`;
-  const titleColor = gradeColors[overallGrade] || gradeColors["No Data"];
-
+  const titleColor = "black"
   filteredData.forEach(row => {
     const varName = row.variable?.trim();
     const varGrade = row.variable_grade?.trim() || "No Data";
@@ -663,9 +644,7 @@ const metricLabel = `${metricName}: ${metricGrade}`;
     values.push(count);
     colorMap[label] = color;
   }
-document.getElementById('reachTitle').textContent = `${reachId} : ${overallGrade}`;
-document.getElementById('gradeBadge').style.backgroundColor = gradeColors[overallGrade] || gradeColors["No Data"];
-  
+
   drawSunburst({
     labels,
     parents,
@@ -679,18 +658,47 @@ document.getElementById('gradeBadge').style.backgroundColor = gradeColors[overal
 // Filter metric data by reach_id and call sunburst rendering
 function handleReachClick(reachId) {
   const filteredData = metricData.filter(row => row.reach_id?.toLowerCase() === reachId.toLowerCase());
-  console.log("Clicked reach:", reachId);
-  console.log("Filtered metric data:", filteredData);
   processSunburstData(filteredData);
-}
 
-handleUpdate();
-    window.addEventListener('resize', () => {
+  // Show the chart if hidden
+  if (!sunburstVisible) {
+    document.getElementById('sunburstChart').style.display = 'block';
+    document.getElementById('sunburstToggleIcon').textContent = '▾';
+    sunburstVisible = true;
+  }
+}
+let sunburstVisible = false;
+
+function toggleSunburst() {
+  const chart = document.getElementById('sunburstChart');
+  const icon = document.getElementById('sunburstToggleIcon');
+
+  sunburstVisible = !sunburstVisible;
+  chart.style.display = sunburstVisible ? 'block' : 'none';
+  icon.textContent = sunburstVisible ? '▾' : '▸';
+}
+// Resize handler
+window.addEventListener('resize', () => {
   if (lastChartData) drawSunburst(lastChartData);
 });
+
+// Initial load
+handleUpdate();
+
+// Register sunburst toggle once
+document.getElementById('sunburstToggleIcon').addEventListener('click', toggleSunburst);  
+
+
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
 
 
 
