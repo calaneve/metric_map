@@ -658,8 +658,10 @@ function handleReachClick(reachId) {
   processSunburstData(filteredData);
 }
 
-
 handleUpdate();
+    window.addEventListener('resize', () => {
+  if (lastChartData) drawSunburst(lastChartData);
+});
   </script>
 </body>
 </html>
