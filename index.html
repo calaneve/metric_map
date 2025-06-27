@@ -70,8 +70,8 @@
   right: 10px;
   top: calc(120px + 260px); /* based on controls */
   z-index: 1100;
-  width: 28vh;
-  height: 28vh;
+  width: 34vh;
+  height: 34vh;
   background: white;
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -270,6 +270,7 @@ function drawSummaryMap() {
       }
       content += '</table>';
       layer.bindTooltip(content, { sticky: true });
+      layer.on('click', () => handleReachClick(feature.properties.reach_id));
     }
   }).addTo(map);
 }
