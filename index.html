@@ -68,10 +68,10 @@
 #sunburstContainer {
   position: absolute;
   right: 10px;
-  top: calc(120px + 260px); /* adjusts based on controls height */
+  top: calc(120px + 260px); /* based on controls */
   z-index: 1100;
-  width: 340px;
-  height: 340px;
+  width: 28vh;
+  height: 28vh;
   background: white;
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -82,6 +82,7 @@
   flex-direction: column;
   align-items: center;
 }
+
 .gradeRow {
   display: flex;
   flex-wrap: wrap;
@@ -214,7 +215,9 @@ const gradeColors = {
   "A": "green", "B": "lightgreen", "C": "yellow",
   "D": "orange", "F": "red", "No Data": "gray", "": "gray"
 };
-
+    
+let lastChartData = null;
+    
 function getActiveGradeFilters() {
   return Array.from(document.querySelectorAll('.gradeFilter:checked')).map(cb => cb.value);
 }
@@ -554,6 +557,11 @@ function getGroupColor(group) {
       });
 // Render the sunburst using Plotly
 function drawSunburst(data) {
+  lastChartData = data;  // save for resize handler
+
+  const container = document.getElementById('sunburstContainer');
+  const size = Math.min(container.offsetWidth, container.offsetHeight) - 20;
+
   Plotly.newPlot('sunburstChart', [{
     type: "sunburst",
     labels: data.labels,
@@ -561,22 +569,22 @@ function drawSunburst(data) {
     values: data.values,
     branchvalues: 'total',
     marker: { colors: data.colors },
-    hoverinfo: "label"  // only show the label
+    hoverinfo: "label"
   }], {
+    width: size,
+    height: size,
     title: {
       text: data.title || "",
-      font: { size: 16, color: data.titleColor || "#000" },
+      font: { size: 14, color: data.titleColor || "#000" },
       xanchor: 'center',
       x: 0.5
     },
-    margin: { l: 0, r: 0, b: 0, t: 10 },
+    margin: { l: 0, r: 0, b: 0, t: 30 },
     sunburst: {
       rotation: 90,
-      tiling: {
-        orientation: 'radial'
-      }
+      tiling: { orientation: 'radial' }
     }
-  });
+  }, { responsive: true });
 }
 
 function processSunburstData(filteredData) {
