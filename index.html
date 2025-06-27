@@ -569,29 +569,30 @@ function drawSunburst(data) {
   const size = Math.min(container.offsetWidth, container.offsetHeight - paddingOffset);
 
   Plotly.newPlot('sunburstChart', [{
-    type: "sunburst",
-    labels: data.labels,
-    parents: data.parents,
-    values: data.values,
-    branchvalues: 'total',
-    marker: { colors: data.colors },
-    hoverinfo: "label"
-  }], {
-    width: size,
-    height: size,
-    title: {
-      text: data.title || "",
-      font: { size: 15, color: data.titleColor || "#000" },
-      xanchor: 'center',
-      x: 0.5
-    },
-    margin: { l: 0, r: 0, b: 0, t: 20 },
-    sunburst: {
-      rotation: 90,
-      tiling: { orientation: 'radial' }
-    }
-  }, { responsive: true });
-}
+  type: "sunburst",
+  labels: data.labels,
+  parents: data.parents,
+  values: data.values,
+  branchvalues: 'total',
+  marker: { colors: data.colors },
+  hoverinfo: "label"
+}], {
+  width: size,
+  height: size,
+  title: {
+    text: data.title || "",
+    font: { size: 15, color: data.titleColor || "#000" },
+    xanchor: 'center',
+    x: 0.5
+  },
+  margin: { l: 0, r: 0, b: 0, t: 20 },
+  sunburst: {
+    rotation: 90,
+    tiling: { orientation: 'radial' }
+  },  
+  paper_bgcolor: 'rgba(0,0,0,0)',  // ✅ Transparent background
+  plot_bgcolor: 'rgba(0,0,0,0)'    // ✅ Transparent plot area
+}, { responsive: true });
 
 function processSunburstData(filteredData) {
   const labels = [];
