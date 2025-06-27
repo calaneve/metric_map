@@ -560,16 +560,17 @@ function processSunburstData(filteredData) {
   const values = [];
   const colorMap = {};
   const nodeCounts = {};
+  const reachId = filteredData[0]?.reach_id?.trim() || "Unknown Reach";
+  const overallGrade = filteredData[0]?.overall_grade?.trim() || "No Data";
+  const chartTitle = `${reachId} : ${overallGrade}`;
+  const titleColor = gradeColors[overallGrade] || gradeColors["No Data"];
 
   filteredData.forEach(row => {
     const varName = row.variable?.trim();
     const varGrade = row.variable_grade?.trim() || "No Data";
     const metricName = row.metric?.trim();
     const metricGrade = row.metric_grade?.trim() || "No Data";
-    const reachId = filteredData[0]?.reach_id?.trim() || "Unknown Reach";
-const overallGrade = filteredData[0]?.overall_grade?.trim() || "No Data";
-const chartTitle = `${reachId} : ${overallGrade}`;
-const titleColor = gradeColors[overallGrade] || gradeColors["No Data"];
+
 
     if (!varName || !metricName) return;
 
