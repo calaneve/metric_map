@@ -540,7 +540,7 @@ function drawSunburst(data) {
   }], {
     title: {
       text: data.title || "",
-      font: { size: 16 },
+      font: { size: 16, color: data.titleColor || "#000" },
       xanchor: 'center',
       x: 0.5
     },
@@ -569,6 +569,7 @@ function processSunburstData(filteredData) {
     const reachId = filteredData[0]?.reach_id?.trim() || "Unknown Reach";
 const overallGrade = filteredData[0]?.overall_grade?.trim() || "No Data";
 const chartTitle = `${reachId} : ${overallGrade}`;
+const titleColor = gradeColors[overallGrade] || gradeColors["No Data"];
 
     if (!varName || !metricName) return;
 
@@ -609,8 +610,9 @@ const metricLabel = `${metricName}: ${metricGrade}`;
     labels,
     parents,
     values,
-    colors: labels.map(label => colorMap[label])
-     title: chartTitle  // 
+    colors: labels.map(label => colorMap[label]),
+     title: chartTitle  
+    titleColor: titleColor
   });
 }
 
