@@ -66,20 +66,43 @@
     }
     /* Fixed sunburst chart box on top-left */
 #sunburstContainer {
-  position: fixed;
-  bottom: 10px;         /* 👈 position from the bottom */
-  right: 10px;          /* 👈 position from the right */
+  position: absolute;
+  right: 10px;
+  top: calc(120px + 260px); /* adjusts based on controls height */
   z-index: 1100;
-  width: 320px;
-  height: 320px;
+  width: 340px;
+  height: 340px;
   background: white;
   border: 1px solid #ccc;
   border-radius: 8px;
-  padding: 10px;
+  padding: 8px 8px 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.gradeRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  margin-top: -4px;
+  margin-bottom: 6px;
 }
 
+.gradeLabel {
+  font-weight: bold;
+  -right: 4px;
+  font-size: 12px;
+}
+.gradeRow label {
+  margin-bottom: 0;
+  font-size: 12px;
+}
   </style>
+  
   <!-- Load Plotly.js for client-side sunburst chart rendering -->
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 </head>
@@ -96,14 +119,15 @@
 <label><input type="radio" name="viewMode" value="metric"> Metric View</label>
 
 
-    <strong>Show Grades:</strong><br>
-    <label><input type="checkbox" class="gradeFilter" value="A" checked> A</label>
-    <label><input type="checkbox" class="gradeFilter" value="B" checked> B</label>
-    <label><input type="checkbox" class="gradeFilter" value="C" checked> C</label>
-    <label><input type="checkbox" class="gradeFilter" value="D" checked> D</label>
-    <label><input type="checkbox" class="gradeFilter" value="F" checked> F</label>
-    <label><input type="checkbox" class="gradeFilter" value="No Data" checked> No Data</label>
-    <button id="updateButton">Update Data</button>
+<div class="gradeRow">
+  <span class="gradeLabel">Show Grades:</span>
+  <label><input type="checkbox" class="gradeFilter" value="A" checked> A</label>
+  <label><input type="checkbox" class="gradeFilter" value="B" checked> B</label>
+  <label><input type="checkbox" class="gradeFilter" value="C" checked> C</label>
+  <label><input type="checkbox" class="gradeFilter" value="D" checked> D</label>
+  <label><input type="checkbox" class="gradeFilter" value="F" checked> F</label>
+  <label><input type="checkbox" class="gradeFilter" value="No Data" checked> ND</label>
+</div>
   </div>
 
   <div id="loading">Updating...</div>
@@ -544,7 +568,7 @@ function drawSunburst(data) {
       xanchor: 'center',
       x: 0.5
     },
-    margin: { l: 0, r: 0, b: 0, t: 30 },
+    margin: { l: 0, r: 0, b: 0, t: 10 },
     sunburst: {
       rotation: 90,
       tiling: {
