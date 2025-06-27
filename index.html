@@ -130,7 +130,7 @@
   <label><input type="checkbox" class="gradeFilter" value="C" checked> C</label>
   <label><input type="checkbox" class="gradeFilter" value="D" checked> D</label>
   <label><input type="checkbox" class="gradeFilter" value="F" checked> F</label>
-  <label><input type="checkbox" class="gradeFilter" value="No Data" checked> ND</label>
+  <label><input type="checkbox" class="gradeFilter" value="No Data" checked> No Data</label>
 </div>
     <button id="updateButton">Update Data</button>
   </div>
@@ -223,6 +223,10 @@ const gradeColors = {
     
 let lastChartData = null;
     
+function normalizeGrade(raw) {
+  const cleaned = (raw || "").replace(/\r|\n/g, "").trim().toUpperCase();
+  return ["A", "B", "C", "D", "F"].includes(cleaned) ? cleaned : "No Data";
+}
 function getActiveGradeFilters() {
   return Array.from(document.querySelectorAll('.gradeFilter:checked')).map(cb => cb.value);
 }
@@ -240,7 +244,7 @@ function clearMapLayers() {
 }
 
 function drawSummaryMap() {
-  const param = parameterSelector.value.trim(); // ensure no trailing space
+  const param = parameterSelector.value.replace(/\r|\n/g, "").trim();
   const grades = getActiveGradeFilters();
 
   console.log("Selected parameter:", param);
@@ -248,7 +252,7 @@ function drawSummaryMap() {
   summaryLayer = L.geoJSON(geojsonData, {
     filter: f => {
       const raw = summaryData[f.properties.reach_id]?.[param];
-      const grade = raw ? raw.trim().toUpperCase() : "No Data";
+      const grade = normalizeGrade(raw);
       const included = grades.includes(grade);
       if (!included) {
         console.log(`Skipping reach ${f.properties.reach_id} with grade "${grade}"`);
@@ -257,7 +261,7 @@ function drawSummaryMap() {
     },
     style: f => {
       const raw = summaryData[f.properties.reach_id]?.[param];
-      const grade = raw ? raw.trim().toUpperCase() : "No Data";
+      const grade = normalizeGrade(raw);
       return {
         color: gradeColors[grade] || 'gray',
         weight: 6
