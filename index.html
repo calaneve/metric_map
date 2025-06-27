@@ -580,18 +580,22 @@ function drawSunburst(data) {
   width: size,
   height: size,
   title: {
-    text: data.title || "",
-    font: { size: 15, color: data.titleColor || "#000" },
-    xanchor: 'center',
-    x: 0.5
+  text: data.title || "",
+  font: {
+    size: 15,
+    color: data.titleColor || "#000",
+    weight: "bold"         // ← ADD THIS
   },
+  xanchor: 'center',
+  x: 0.5
+},
   margin: { l: 0, r: 0, b: 0, t: 30 },
   sunburst: {
     rotation: 90,
     tiling: { orientation: 'radial' }
   },  
   paper_bgcolor: 'rgba(0,0,0,0)',  // ✅ Transparent background
-  plot_bgcolor: '#fdf6e3'    // ✅ plot area
+  plot_bgcolor: 'rgba(255,255,255,0.80)'     // ✅ plot area
 }, { responsive: true });
 }
 function processSunburstData(filteredData) {
