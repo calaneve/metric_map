@@ -70,8 +70,8 @@
   right: 10px;
   top: calc(120px + 260px); /* based on controls */
   z-index: 1100;
-  width: 34vh;
-  height: 34vh;
+  width: 55vh;
+  height: 55vh;
   background: white;
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -81,6 +81,25 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+    .sunburstHeader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  font-weight: bold;
+  font-size: 13px;
+  color: black; /* readable */
+  border-bottom: 1px solid #ccc;
+}
+
+.gradeBadge {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid #444;
 }
 
 .gradeRow {
@@ -158,6 +177,10 @@
     <div><span style="display:inline-block;width:16px;height:16px;background:gray;"></span> No Data</div>
   </div>
   <div id="sunburstContainer">
+      <div id="sunburstHeader" class="sunburstHeader">
+    <span id="reachTitle"></span>
+    <span id="gradeBadge" class="gradeBadge"></span>
+  </div>
   <div id="sunburstChart"></div>
 </div>
   <div id="map"></div>
@@ -574,12 +597,12 @@ function drawSunburst(data) {
   }], {
     width: size,
     height: size,
-    title: {
-      text: data.title || "",
-      font: { size: 14, color: data.titleColor || "#000" },
-      xanchor: 'center',
-      x: 0.5
-    },
+    // title: {
+    //   text: data.title || "",
+    //   font: { size: 14, color: data.titleColor || "#000" },
+    //   xanchor: 'center',
+    //   x: 0.5
+    // },
     margin: { l: 0, r: 0, b: 0, t: 30 },
     sunburst: {
       rotation: 90,
@@ -640,7 +663,9 @@ const metricLabel = `${metricName}: ${metricGrade}`;
     values.push(count);
     colorMap[label] = color;
   }
-
+document.getElementById('reachTitle').textContent = `${reachId} : ${overallGrade}`;
+document.getElementById('gradeBadge').style.backgroundColor = gradeColors[overallGrade] || gradeColors["No Data"];
+  
   drawSunburst({
     labels,
     parents,
