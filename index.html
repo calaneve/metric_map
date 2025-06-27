@@ -537,7 +537,8 @@ fetch(subwatershedUrl)
 document.getElementById('toggleSubwatersheds').addEventListener('change', function () {
   const show = this.checked;
   if (show) {
-    map.addLayer(subwatershedLayer);
+    subwatershedLayer.addTo(map);
+    subwatershedLayer.bringToBack(); // 💡 Ensure it stays beneath other layers
     document.getElementById('subLegend').style.display = 'block';
   } else {
     map.removeLayer(subwatershedLayer);
