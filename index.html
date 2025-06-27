@@ -566,7 +566,7 @@ function drawSunburst(data) {
   lastChartData = data;  // save for resize handler
 
   const container = document.getElementById('sunburstContainer');
-  const size = Math.min(container.offsetWidth, container.offsetHeight - 20);
+  const size = Math.min(container.offsetWidth, container.offsetHeight) * 0.95;
 
   Plotly.newPlot('sunburstChart', [{
   type: "sunburst",
@@ -585,13 +585,13 @@ function drawSunburst(data) {
     xanchor: 'center',
     x: 0.5
   },
-  margin: { l: 0, r: 0, b: 0, t: 20 },
+  margin: { l: 0, r: 0, b: 0, t: 30 },
   sunburst: {
     rotation: 90,
     tiling: { orientation: 'radial' }
   },  
   paper_bgcolor: 'rgba(0,0,0,0)',  // ✅ Transparent background
-  plot_bgcolor: 'rgba(0,0,0,0)'    // ✅ Transparent plot area
+  plot_bgcolor: '#fdf6e3'    // ✅ plot area
 }, { responsive: true });
 }
 function processSunburstData(filteredData) {
