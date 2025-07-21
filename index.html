@@ -142,13 +142,15 @@
 
   <div id="subLegend">
     <strong>Subwatershed Groups</strong><br>
-    <div><span style="display:inline-block;width:16px;height:16px;background:#08dd6d;"></span> Colorado River Headwaters</div>
-    <div><span style="display:inline-block;width:16px;height:16px;background:#ac49f9;"></span> Colorado River Lower</div>
-    <div><span style="display:inline-block;width:16px;height:16px;background:#3e77b2;"></span> Colorado River Mid</div>
+    <div><span style="display:inline-block;width:16px;height:16px;background:#fbfdcd;></span> Colorado River Headwaters</div>
     <div><span style="display:inline-block;width:16px;height:16px;background:#f7a318;"></span> Colorado River Upper</div>
-    <div><span style="display:inline-block;width:16px;height:16px;background:#05a16f;"></span> Fraser River Lower</div>
-    <div><span style="display:inline-block;width:16px;height:16px;background:#b6e04c;"></span> Fraser River Mid</div>
-    <div><span style="display:inline-block;width:16px;height:16px;background:#e7402c;"></span> Fraser River Upper</div>
+    <div><span style="display:inline-block;width:16px;height:16px;background:#ffb5c2;"></span> Colorado River Mid</div>
+    <div><span style="display:inline-block;width:16px;height:16px;background:#bab3fd;"></span> Colorado River Lower</div>
+    <div><span style="display:inline-block;width:16px;height:16px;background:#f2d8ff;"></span> Fraser River Upper</div>
+    <div><span style="display:inline-block;width:16px;height:16px;background:#b9fddd;"></span> Fraser River Mid</div>
+    <div><span style="display:inline-block;width:16px;height:16px;background:#ffb3f7;"></span> Fraser River Lower</div>
+    
+    
   </div>
 
   <div id="legend">
@@ -526,8 +528,8 @@ fetch(subwatershedUrl)
     subwatershedLayer = L.geoJSON(data, {
       style: f => ({
         color: getGroupColor(f.properties.group),
-        weight: 2,
-        fillOpacity: 0.2
+        weight: 3,
+        fillOpacity: 0.3
       }),
       onEachFeature: (f, l) =>
         l.bindPopup(`<strong>Group:</strong> ${f.properties.group}`)
